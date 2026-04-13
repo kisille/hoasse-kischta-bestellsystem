@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 
+// ── CONFIG ──
 const INFO_BANNER = "";
 const BLOCKED_SLOTS_FROM = "";
 const BLOCKED_SLOTS_TO = "";
@@ -81,40 +82,61 @@ function genSlots() {
 
 export default function App() {
   const [cart, setCart] = useState({});
+  const [sauceChoices, setSauceChoices] = useState([]);
   const [step, setStep] = useState("menu");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [time, setTime] = useState("");
+  const [notes, setNotes] = useState("");
   const [slots, setSlots] = useState([]);
   const [cat, setCat] = useState("Zum Eassa");
+  const [showSaucePicker, setShowSaucePicker] = useState(false);
 
   useEffect(() => {
     setSlots(genSlots());
   }, []);
 
-  const add = (id) => setCart(c => ({ ...c, [id]: (c[id] || 0) + 1 }));
+  const add = (id) => {
+    const item = MENU.find(m => m.id === id);
+    if (item && item.isSauce) {
+      setShowSaucePicker(true);
+      return;
+    }
+    setCart(c => ({ ...c, [id]: (c[id] || 0) + 1 }));
+  };
 
-  const total = Object.entries(cart).reduce((sum, [id, qty]) => {
-    const item = MENU.find(m => m.id === parseInt(id));
-    return sum + (item ? item.price * qty : 0);
+  const total = Object.entries(cart).reduce((s, [id, q]) => {
+    const i = MENU.find(m => m.id === parseInt(id));
+    return s + (i ? i.price * q : 0);
   }, 0);
 
   const count = Object.values(cart).reduce((a, b) => a + b, 0);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#2d2d2d", color: "#f0ebe0", fontFamily: "system-ui", padding: "20px", maxWidth: "480px", margin: "0 auto" }}>
-      <h1 style={{ textAlign: "center" }}>🔥 Manu's Hoasse Kischta</h1>
-      <p style={{ textAlign: "center" }}>Bestellsystem zur Abholung</p>
-      
-      {step === "menu" && (
-        <div>
-          <p>Wähle Kategorie und füge Artikel hinzu.</p>
-          {/* Hier kommt später das volle Menü */}
-          <div style={{ marginTop: "30px", padding: "20px", background: "#3a3a3a", borderRadius: "12px" }}>
+    <div style={{ minHeight: "100vh", background: "#2d2d2d", color: "#f0ebe0", fontFamily: "system-ui, sans-serif" }}>
+      {/* Header */}
+      <div style={{ background: "#8a9e8a", padding: "20px 16px", textAlign: "center" }}>
+        <div style={{ fontSize: "28px", fontWeight: "700" }}>🔥 Manu's Hoasse Kischta</div>
+        <div style={{ fontSize: "14px", opacity: "0.9" }}>Gewerbestraße 2 · 6710 Nenzing</div>
+      </div>
+
+      <div style={{ maxWidth: "480px", margin: "0 auto", padding: "16px" }}>
+        <h2 style={{ textAlign: "center", margin: "20px 0 8px" }}>Zum Eassa und z Trinka</h2>
+        <p style={{ textAlign: "center", color: "#aaa" }}>Wähle Kategorie und füge Artikel hinzu.</p>
+
+        {/* Warenkorb Button */}
+        {count > 0 && (
+          <div style={{ background: "#8a9e8a", color: "white", padding: "14px", borderRadius: "12px", textAlign: "center", margin: "20px 0", fontWeight: "600" }}
+               onClick={() => alert("Checkout kommt gleich – aktuell nur Test")}>
             Warenkorb: {count} Artikel — € {total.toFixed(2)}
           </div>
+        )}
+
+        <div style={{ textAlign: "center", marginTop: "40px", color: "#666" }}>
+          Die volle Bestell-App wird gerade eingebaut.<br />
+          Bitte warte einen Moment...
         </div>
-      )}
+      </div>
     </div>
   );
 }
