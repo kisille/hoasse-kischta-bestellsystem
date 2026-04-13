@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 
-const INFO_BANNER = "";
-const BLOCKED_SLOTS_FROM = "";
-const BLOCKED_SLOTS_TO = "";
+// ── CONFIG ──
+const INFO_BANNER = "";           // Leer lassen oder Text reinschreiben
+const BLOCKED_SLOTS_FROM = "";    // z.B. "16:30"
+const BLOCKED_SLOTS_TO = "";      // z.B. "21:00"
 
 const SAUCES = ["Ketchup", "Majo", "Senf", "Tartare", "Zwiebel-Sauce", "Curry-Sauce", "Burger-Sauce", "Bosnasosse (hausgemacht)"];
 
@@ -69,7 +70,9 @@ function genSlots() {
     let h = sh, m = sm;
     while (h < eh || (h === eh && m <= em - 15)) {
       const t = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-      if (h * 60 + m >= now.getHours() * 60 + now.getMinutes() + 15) slots.push(t);
+      if (h * 60 + m >= now.getHours() * 60 + now.getMinutes() + 15) {
+        slots.push(t);
+      }
       m += 15;
       if (m >= 60) { h++; m = 0; }
     }
@@ -79,6 +82,7 @@ function genSlots() {
 
 export default function App() {
   const [cart, setCart] = useState({});
+  const [sauceChoices, setSauceChoices] = useState([]);
   const [step, setStep] = useState("menu");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -86,40 +90,121 @@ export default function App() {
   const [notes, setNotes] = useState("");
   const [slots, setSlots] = useState([]);
   const [cat, setCat] = useState("Zum Eassa");
+  const [showSaucePicker, setShowSaucePicker] = useState(false);
 
-  useEffect(() => setSlots(genSlots()), []);
+  useEffect(() => {
+    setSlots(genSlots());
+  }, []);
 
-  const add = id => setCart(c => ({ ...c, [id]: (c[id] || 0) + 1 }));
-  const rem = id => setCart(c => { const n = {...c}; if (n[id] > 1) n[id]--; else delete n[id]; return n; });
+  const add = (id) => {
+    const item = MENU.find(m => m.id === id);
+    if (item?.isSauce) {
+      setShowSaucePicker(true);
+      return;
+    }
+    setCart(c => ({ ...c, [id]: (c[id] || 0) + 1 }));
+  };
 
-  const total = Object.entries(cart).reduce((s, [id, q]) => {
-    const i = MENU.find(m => m.id === +id);
-    return s + (i ? i.price * q : 0);
+  const rem = (id) => {
+    setCart(c => {
+      const n = { ...c };
+      if (n[id] > 1) n[id]--;
+      else delete n[id];
+      return n;
+    });
+  };
+
+  const total = Object.entries(cart).reduce((sum, [id, qty]) => {
+    const item = MENU.find(m => m.id === parseInt(id));
+    return sum + (item ? item.price * qty : 0);
   }, 0);
 
   const count = Object.values(cart).reduce((a, b) => a + b, 0);
 
+  const items = Object.entries(cart).map(([id, qty]) => {
+    const base = MENU.find(m => m.id === parseInt(id));
+    if (parseInt(id) === 21 && sauceChoices.length > 0) {
+      return { ...base, qty, name: `Sauce (${sauceChoices.join(", ")})` };
+    }
+    return { ...base, qty };
+  });
+
   return (
     <div style={{ minHeight: "100vh", background: "#2d2d2d", color: "#f0ebe0", fontFamily: "system-ui, sans-serif" }}>
-      <div style={{ background: "#8a9e8a", padding: "20px", textAlign: "center" }}>
+      {/* Header */}
+      <div style={{ background: "#8a9e8a", padding: "20px 16px", textAlign: "center" }}>
         <div style={{ fontSize: "28px", fontWeight: "700" }}>🔥 Manu's Hoasse Kischta</div>
-        <div style={{ fontSize: "14px" }}>Gewerbestraße 2 · 6710 Nenzing</div>
+        <div style={{ fontSize: "14px", opacity: 0.9 }}>Gewerbestraße 2 · 6710 Nenzing</div>
       </div>
 
-      <div style={{ maxWidth: "480px", margin: "0 auto", padding: "20px" }}>
-        <h1 style={{ textAlign: "center", marginBottom: "8px" }}>Zum Eassa und z Trinka</h1>
-        <p style={{ textAlign: "center", color: "#aaa" }}>Wähle Kategorie und füge Artikel hinzu.</p>
+      <div style={{ maxWidth: "480px", margin: "0 auto", padding: "16px" }}>
 
-        {count > 0 && (
-          <div style={{ background: "#8a9e8a", color: "white", padding: "16px", borderRadius: "12px", textAlign: "center", margin: "20px 0", fontSize: "18px", fontWeight: "600" }}>
-            Warenkorb: {count} Artikel — € {total.toFixed(2)}
-          </div>
+        {step === "menu" && (
+          <>
+            <h1 style={{ textAlign: "center", margin: "24px 0 8px", fontSize: "24px" }}>Zum Eassa und z Trinka</h1>
+            <p style={{ textAlign: "center", color: "#aaa" }}>Wähle Kategorie und füge Artikel hinzu.</p>
+
+            {/* Kategorien */}
+            <div style={{ display: "flex", gap: "8px", overflowX: "auto", padding: "12px 0", marginBottom: "16px" }}>
+              {CATS.map(c => (
+                <button
+                  key={c}
+                  onClick={() => setCat(c)}
+                  style={{
+                    padding: "8px 16px",
+                    borderRadius: "8px",
+                    background: cat === c ? "#8a9e8a" : "#3a3a3a",
+                    color: cat === c ? "#fff" : "#ccc",
+                    border: "none",
+                    whiteSpace: "nowrap",
+                    fontWeight: "600"
+                  }}
+                >
+                  {CAT_ICONS[c]} {c}
+                </button>
+              ))}
+            </div>
+
+            {/* Menu Items */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {MENU.filter(item => item.cat === cat).map(item => {
+                const qty = cart[item.id] || 0;
+                return (
+                  <div key={item.id} style={{ background: "#3a3a3a", padding: "14px", borderRadius: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <div style={{ fontWeight: "600" }}>{item.name}</div>
+                      {item.desc && <div style={{ fontSize: "13px", color: "#aaa", marginTop: "4px" }}>{item.desc}</div>}
+                      <div style={{ color: "#d4943a", fontWeight: "700", marginTop: "4px" }}>€ {item.price.toFixed(2)}</div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      {qty > 0 && <button onClick={() => rem(item.id)} style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#555", color: "#fff", border: "none" }}>-</button>}
+                      {qty > 0 && <span style={{ minWidth: "20px", textAlign: "center", fontWeight: "700" }}>{qty}</span>}
+                      <button onClick={() => add(item.id)} style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#8a9e8a", color: "#fff", border: "none" }}>+</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {count > 0 && (
+              <button
+                onClick={() => setStep("checkout")}
+                style={{ marginTop: "30px", width: "100%", padding: "16px", background: "#8a9e8a", color: "#fff", border: "none", borderRadius: "12px", fontSize: "17px", fontWeight: "700" }}
+              >
+                Zum Warenkorb → € {total.toFixed(2)}
+              </button>
+            )}
+          </>
         )}
 
-        <div style={{ marginTop: "40px", textAlign: "center", color: "#666" }}>
-          Die volle Bestell-App (mit allen Gerichten, Sauce-Auswahl und Checkout) wird gerade eingebaut.<br/><br/>
-          Sobald du den Code oben ersetzt hast, redeploy einfach nochmal.
-        </div>
+        {/* Hier kommt später Checkout + Done Screen */}
+        {step === "checkout" && (
+          <div>
+            <button onClick={() => setStep("menu")} style={{ color: "#8a9e8a", marginBottom: "20px" }}>← Zurück</button>
+            <h2>Dini Bstellung</h2>
+            <p>Checkout wird gerade fertig programmiert...</p>
+          </div>
+        )}
       </div>
     </div>
   );
