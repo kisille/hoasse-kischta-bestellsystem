@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
 
-// ── CONFIG ──
-const INFO_BANNER = "";           // Leer lassen oder Text reinschreiben
-const BLOCKED_SLOTS_FROM = "";    // z.B. "16:30"
-const BLOCKED_SLOTS_TO = "";      // z.B. "21:00"
+// ── CONFIG: Info-Banner (hier Text ändern oder leer lassen um auszublenden) ──
+const INFO_BANNER = "";
+// Beispiel: const INFO_BANNER = "Am Freitag, 25.04.26 bleibt unser Imbiss am Nachmittag GESCHLOSSEN. Mittags 11:30-13:30 sind wir für Euch da!";
+// ── Wenn ein Banner aktiv ist, werden betroffene Abholzeiten gesperrt ──
+const BLOCKED_SLOTS_FROM = ""; // z.B. "16:30" um Nachmittag zu sperren
+const BLOCKED_SLOTS_TO = "";   // z.B. "21:00"
+// ─────────────────────────────────────────────────────────────────────────────
 
 const SAUCES = ["Ketchup", "Majo", "Senf", "Tartare", "Zwiebel-Sauce", "Curry-Sauce", "Burger-Sauce", "Bosnasosse (hausgemacht)"];
 
@@ -51,33 +54,66 @@ const MENU = [
 
 const CATS = ["Zum Eassa", "Spezial", "Vegi", "Extras", "Getränke", "Bier"];
 const CAT_ICONS = { "Zum Eassa": "🔥", "Spezial": "⭐", "Vegi": "🌿", "Extras": "➕", "Getränke": "🥤", "Bier": "🍺" };
-
-const HOURS = {
-  1: [["11:30","13:30"],["17:00","20:00"]],
-  2: [["11:30","13:30"],["16:30","21:00"]],
-  3: [["11:30","13:30"],["16:30","21:00"]],
-  4: [["11:30","13:30"],["16:30","21:00"]],
-  5: [["11:30","13:30"],["16:30","21:00"]]
-};
+const HOURS = { 1:[["11:30","13:30"],["17:00","20:00"]], 2:[["11:30","13:30"],["16:30","21:00"]], 3:[["11:30","13:30"],["16:30","21:00"]], 4:[["11:30","13:30"],["16:30","21:00"]], 5:[["11:30","13:30"],["16:30","21:00"]] };
 
 function genSlots() {
-  const now = new Date();
-  const ranges = HOURS[now.getDay()] || [];
+  const now = new Date(), ranges = HOURS[now.getDay()];
+  if (!ranges) return [];
   const slots = [];
   for (const [s, e] of ranges) {
-    const [sh, sm] = s.split(":").map(Number);
-    const [eh, em] = e.split(":").map(Number);
+    const [sh, sm] = s.split(":").map(Number), [eh, em] = e.split(":").map(Number);
     let h = sh, m = sm;
     while (h < eh || (h === eh && m <= em - 15)) {
       const t = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
       if (h * 60 + m >= now.getHours() * 60 + now.getMinutes() + 15) {
-        slots.push(t);
+        if (BLOCKED_SLOTS_FROM && BLOCKED_SLOTS_TO) {
+          const [bfh, bfm] = BLOCKED_SLOTS_FROM.split(":").map(Number);
+          const [bth, btm] = BLOCKED_SLOTS_TO.split(":").map(Number);
+          const slotMin = h * 60 + m;
+          if (slotMin < bfh * 60 + bfm || slotMin >= bth * 60 + btm) slots.push(t);
+        } else {
+          slots.push(t);
+        }
       }
-      m += 15;
-      if (m >= 60) { h++; m = 0; }
+      m += 15; if (m >= 60) { h++; m = 0; }
     }
   }
   return slots;
+}
+
+const S = "#8a9e8a", SL = "#a3b5a3", BG = "#2d2d2d", BGL = "#3a3a3a", CR = "#f0ebe0", CRD = "rgba(240,235,224,0.5)", OR = "#d4943a";
+
+function SaucePicker({ onConfirm, onCancel }) {
+  const [sel, setSel] = useState([]);
+  const toggle = s => setSel(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={onCancel}>
+      <div style={{ background: BG, borderRadius: 14, padding: 20, width: "100%", maxWidth: 340, border: `1px solid rgba(240,235,224,0.1)` }} onClick={e => e.stopPropagation()}>
+        <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 700, color: CR }}>Sauce wähla</h3>
+        <div style={{ fontSize: 12, color: CRD, marginBottom: 14 }}>Pro Sauce 0,50 € · Mehrere möglich</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {SAUCES.map(s => (
+            <button key={s} onClick={() => toggle(s)} style={{
+              padding: "10px 12px", borderRadius: 8, fontSize: 14, textAlign: "left",
+              background: sel.includes(s) ? "rgba(138,158,138,0.2)" : "rgba(240,235,224,0.04)",
+              border: sel.includes(s) ? `1px solid ${SL}` : "1px solid rgba(240,235,224,0.08)",
+              color: sel.includes(s) ? CR : CRD, cursor: "pointer", transition: "all 0.2s",
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+            }}>
+              <span>{s}</span>
+              {sel.includes(s) && <span style={{ color: S, fontWeight: 700 }}>✓</span>}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+          <button onClick={onCancel} style={{ flex: 1, padding: "11px", borderRadius: 8, background: "rgba(240,235,224,0.06)", border: "1px solid rgba(240,235,224,0.1)", color: CRD, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Abbrecha</button>
+          <button onClick={() => onConfirm(sel)} disabled={sel.length === 0} style={{ flex: 1, padding: "11px", borderRadius: 8, background: sel.length > 0 ? S : "rgba(240,235,224,0.08)", border: "none", color: "#fff", fontSize: 14, fontWeight: 600, cursor: sel.length > 0 ? "pointer" : "not-allowed", transition: "all 0.2s" }}>
+            {sel.length > 0 ? `${sel.length}× hinzufüga` : "Wähla"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function App() {
@@ -90,122 +126,211 @@ export default function App() {
   const [notes, setNotes] = useState("");
   const [slots, setSlots] = useState([]);
   const [cat, setCat] = useState("Zum Eassa");
+  const [anim, setAnim] = useState(false);
   const [showSaucePicker, setShowSaucePicker] = useState(false);
+  useEffect(() => { setSlots(genSlots()); setTimeout(() => setAnim(true), 100); }, []);
 
-  useEffect(() => {
-    setSlots(genSlots());
-  }, []);
-
-  const add = (id) => {
+  const add = id => {
     const item = MENU.find(m => m.id === id);
-    if (item?.isSauce) {
-      setShowSaucePicker(true);
-      return;
-    }
+    if (item && item.isSauce) { setShowSaucePicker(true); return; }
     setCart(c => ({ ...c, [id]: (c[id] || 0) + 1 }));
   };
+  const rem = id => setCart(c => { const n = { ...c }; if (n[id] > 1) n[id]--; else delete n[id]; return n; });
 
-  const rem = (id) => {
-    setCart(c => {
-      const n = { ...c };
-      if (n[id] > 1) n[id]--;
-      else delete n[id];
-      return n;
-    });
+  const handleSauceConfirm = (sauces) => {
+    setShowSaucePicker(false);
+    setSauceChoices(prev => [...prev, ...sauces]);
+    setCart(c => ({ ...c, [21]: (c[21] || 0) + sauces.length }));
   };
 
-  const total = Object.entries(cart).reduce((sum, [id, qty]) => {
-    const item = MENU.find(m => m.id === parseInt(id));
-    return sum + (item ? item.price * qty : 0);
-  }, 0);
-
+  const sauceQty = cart[21] || 0;
+  const total = Object.entries(cart).reduce((s, [id, q]) => { const i = MENU.find(m => m.id === +id); return s + (i ? i.price * q : 0); }, 0);
   const count = Object.values(cart).reduce((a, b) => a + b, 0);
-
-  const items = Object.entries(cart).map(([id, qty]) => {
-    const base = MENU.find(m => m.id === parseInt(id));
-    if (parseInt(id) === 21 && sauceChoices.length > 0) {
-      return { ...base, qty, name: `Sauce (${sauceChoices.join(", ")})` };
+  const items = Object.entries(cart).map(([id, q]) => {
+    const base = MENU.find(m => m.id === +id);
+    if (+id === 21 && sauceChoices.length > 0) {
+      return { ...base, qty: q, name: "Sauce (" + sauceChoices.join(", ") + ")" };
     }
-    return { ...base, qty };
+    return { ...base, qty: q };
   });
+  const open = !!HOURS[new Date().getDay()];
+  const dayN = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"][new Date().getDay()];
+  const iS = { width: "100%", padding: "12px 14px", borderRadius: 8, boxSizing: "border-box", background: BGL, border: "1px solid rgba(240,235,224,0.12)", color: CR, fontSize: 15, outline: "none", fontFamily: "inherit" };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#2d2d2d", color: "#f0ebe0", fontFamily: "system-ui, sans-serif" }}>
-      {/* Header */}
-      <div style={{ background: "#8a9e8a", padding: "20px 16px", textAlign: "center" }}>
-        <div style={{ fontSize: "28px", fontWeight: "700" }}>🔥 Manu's Hoasse Kischta</div>
-        <div style={{ fontSize: "14px", opacity: 0.9 }}>Gewerbestraße 2 · 6710 Nenzing</div>
+    <div style={{ minHeight: "100vh", background: BG, fontFamily: "'Segoe UI', -apple-system, sans-serif", color: CR }}>
+      {showSaucePicker && <SaucePicker onConfirm={handleSauceConfirm} onCancel={() => setShowSaucePicker(false)} />}
+
+      {/* HEADER */}
+      <div style={{ background: S, boxShadow: "0 2px 20px rgba(0,0,0,0.3)" }}>
+        <div style={{ maxWidth: 520, margin: "0 auto", padding: "20px 16px", display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>🔥</div>
+          <div>
+            <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 0.5 }}>Manu's Hoasse Kischta</div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>Gewerbestraße 2 · 6710 Nenzing</div>
+          </div>
+        </div>
+        {step === "menu" && (
+          <div style={{ maxWidth: 520, margin: "0 auto", padding: "0 16px 14px" }}>
+            <div style={{ display: "inline-block", background: open ? "rgba(0,0,0,0.15)" : "rgba(180,30,30,0.5)", borderRadius: 8, padding: "4px 14px", fontSize: 12, fontWeight: 600 }}>
+              {open ? `✓ Heute offen (${dayN})` : `✗ Heute gschlossa (${dayN})`}
+            </div>
+          </div>
+        )}
       </div>
 
-      <div style={{ maxWidth: "480px", margin: "0 auto", padding: "16px" }}>
+      <div style={{ maxWidth: 520, margin: "0 auto", padding: "0 16px 100px" }}>
 
+        {/* INFO BANNER */}
+        {INFO_BANNER && step === "menu" && (
+          <div style={{ marginTop: 16, padding: "12px 14px", borderRadius: 10, background: "rgba(212,148,58,0.12)", border: "1px solid rgba(212,148,58,0.3)", fontSize: 13, color: OR, lineHeight: 1.5, fontWeight: 600 }}>
+            ⚠️ {INFO_BANNER}
+          </div>
+        )}
+
+        {/* ===== MENU ===== */}
         {step === "menu" && (
-          <>
-            <h1 style={{ textAlign: "center", margin: "24px 0 8px", fontSize: "24px" }}>Zum Eassa und z Trinka</h1>
-            <p style={{ textAlign: "center", color: "#aaa" }}>Wähle Kategorie und füge Artikel hinzu.</p>
+          <div style={{ opacity: anim ? 1 : 0, transition: "opacity 0.4s" }}>
+            <div style={{ padding: INFO_BANNER ? "16px 0 8px" : "24px 0 8px", textAlign: "center" }}>
+              <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: CR, letterSpacing: 1, textTransform: "uppercase" }}>Z Eassa und z Trinka</h2>
+              <div style={{ fontSize: 12, color: CRD, marginTop: 4 }}>Wähl us und bstell zur Abholung</div>
+            </div>
 
-            {/* Kategorien */}
-            <div style={{ display: "flex", gap: "8px", overflowX: "auto", padding: "12px 0", marginBottom: "16px" }}>
+            {/* Category Tabs */}
+            <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: "12px 0", scrollbarWidth: "none" }}>
               {CATS.map(c => (
-                <button
-                  key={c}
-                  onClick={() => setCat(c)}
-                  style={{
-                    padding: "8px 16px",
-                    borderRadius: "8px",
-                    background: cat === c ? "#8a9e8a" : "#3a3a3a",
-                    color: cat === c ? "#fff" : "#ccc",
-                    border: "none",
-                    whiteSpace: "nowrap",
-                    fontWeight: "600"
-                  }}
-                >
-                  {CAT_ICONS[c]} {c}
-                </button>
+                <button key={c} onClick={() => setCat(c)} style={{
+                  background: cat === c ? S : "rgba(240,235,224,0.06)",
+                  border: cat === c ? `1px solid ${SL}` : "1px solid rgba(240,235,224,0.08)",
+                  color: cat === c ? "#fff" : CRD,
+                  borderRadius: 8, padding: "8px 14px", fontSize: 12,
+                  fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.25s",
+                }}>{CAT_ICONS[c]} {c}</button>
               ))}
             </div>
 
-            {/* Menu Items */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {MENU.filter(item => item.cat === cat).map(item => {
-                const qty = cart[item.id] || 0;
+            {/* Items */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+              {MENU.filter(m => m.cat === cat).map(item => {
+                const qty = item.isSauce ? sauceQty : (cart[item.id] || 0);
                 return (
-                  <div key={item.id} style={{ background: "#3a3a3a", padding: "14px", borderRadius: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div>
-                      <div style={{ fontWeight: "600" }}>{item.name}</div>
-                      {item.desc && <div style={{ fontSize: "13px", color: "#aaa", marginTop: "4px" }}>{item.desc}</div>}
-                      <div style={{ color: "#d4943a", fontWeight: "700", marginTop: "4px" }}>€ {item.price.toFixed(2)}</div>
+                  <div key={item.id} style={{
+                    background: qty > 0 ? "rgba(138,158,138,0.12)" : "rgba(240,235,224,0.03)",
+                    border: qty > 0 ? "1px solid rgba(138,158,138,0.35)" : "1px solid rgba(240,235,224,0.06)",
+                    borderRadius: 12, padding: "12px 14px",
+                    display: "flex", justifyContent: "space-between", alignItems: "center", transition: "all 0.25s",
+                  }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, fontSize: 14, color: CR }}>{item.name}</div>
+                      {item.isSauce && <div style={{ fontSize: 11, color: CRD, marginTop: 2 }}>Ketchup, Majo, Senf, Tartare, Zwiebel, Curry, Burger, Bosnasosse</div>}
+                      {item.desc && <div style={{ fontSize: 11, color: CRD, marginTop: 2 }}>{item.desc}</div>}
+                      {item.isSauce && sauceChoices.length > 0 && (
+                        <div style={{ fontSize: 11, color: S, marginTop: 3, fontWeight: 600 }}>Gwählt: {sauceChoices.join(", ")}</div>
+                      )}
+                      <div style={{ fontSize: 14, fontWeight: 700, color: OR, marginTop: 4 }}>{item.price === 0 ? "gratis" : `€ ${item.price.toFixed(2)}`}{item.isSauce ? " pro Sauce" : ""}</div>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      {qty > 0 && <button onClick={() => rem(item.id)} style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#555", color: "#fff", border: "none" }}>-</button>}
-                      {qty > 0 && <span style={{ minWidth: "20px", textAlign: "center", fontWeight: "700" }}>{qty}</span>}
-                      <button onClick={() => add(item.id)} style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#8a9e8a", color: "#fff", border: "none" }}>+</button>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      {qty > 0 && !item.isSauce && (
+                        <>
+                          <button onClick={() => rem(item.id)} style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(240,235,224,0.08)", border: "1px solid rgba(240,235,224,0.15)", color: CR, fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
+                          <span style={{ fontWeight: 700, fontSize: 15, minWidth: 18, textAlign: "center" }}>{qty}</span>
+                        </>
+                      )}
+                      {item.isSauce && qty > 0 && (
+                        <>
+                          <button onClick={() => { setCart(c => { const n = {...c}; delete n[21]; return n; }); setSauceChoices([]); }} style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(240,235,224,0.08)", border: "1px solid rgba(240,235,224,0.15)", color: CR, fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+                          <span style={{ fontWeight: 700, fontSize: 15, minWidth: 18, textAlign: "center" }}>{qty}</span>
+                        </>
+                      )}
+                      <button onClick={() => add(item.id)} style={{ width: 30, height: 30, borderRadius: "50%", background: S, border: "none", color: "#fff", fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
                     </div>
                   </div>
                 );
               })}
             </div>
 
-            {count > 0 && (
-              <button
-                onClick={() => setStep("checkout")}
-                style={{ marginTop: "30px", width: "100%", padding: "16px", background: "#8a9e8a", color: "#fff", border: "none", borderRadius: "12px", fontSize: "17px", fontWeight: "700" }}
-              >
-                Zum Warenkorb → € {total.toFixed(2)}
-              </button>
-            )}
-          </>
+            <div style={{ marginTop: 20, padding: "12px 14px", borderRadius: 10, background: "rgba(138,158,138,0.08)", border: "1px solid rgba(138,158,138,0.15)", fontSize: 12, color: CRD, lineHeight: 1.5 }}>
+              <strong style={{ color: S }}>📍 Nur Abholung</strong> · Bstell online, hol ab zur gwählta Ziit. Tel: +43 (0)660 3832646
+            </div>
+          </div>
         )}
 
-        {/* Hier kommt später Checkout + Done Screen */}
+        {/* ===== CHECKOUT ===== */}
         {step === "checkout" && (
-          <div>
-            <button onClick={() => setStep("menu")} style={{ color: "#8a9e8a", marginBottom: "20px" }}>← Zurück</button>
-            <h2>Dini Bstellung</h2>
-            <p>Checkout wird gerade fertig programmiert...</p>
+          <div style={{ paddingTop: 20 }}>
+            <button onClick={() => setStep("menu")} style={{ background: "none", border: "none", color: S, fontSize: 14, cursor: "pointer", padding: 0, marginBottom: 14, fontWeight: 600 }}>← Zruck zur Karta</button>
+            <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 14px" }}>Dini Bstellung</h2>
+            <div style={{ background: "rgba(240,235,224,0.03)", borderRadius: 12, border: "1px solid rgba(240,235,224,0.06)", overflow: "hidden" }}>
+              {items.map((it, i) => (
+                <div key={it.id} style={{ padding: "10px 14px", display: "flex", justifyContent: "space-between", borderBottom: i < items.length - 1 ? "1px solid rgba(240,235,224,0.06)" : "none" }}>
+                  <span style={{ fontSize: 14 }}><strong>{it.qty}×</strong> {it.name}</span>
+                  <span style={{ fontWeight: 700, color: OR, fontSize: 14 }}>€ {(it.price * it.qty).toFixed(2)}</span>
+                </div>
+              ))}
+              <div style={{ padding: "12px 14px", display: "flex", justifyContent: "space-between", background: "rgba(138,158,138,0.1)", borderTop: "1px solid rgba(138,158,138,0.2)" }}>
+                <span style={{ fontWeight: 800, fontSize: 15 }}>Gesamt</span>
+                <span style={{ fontWeight: 800, fontSize: 15, color: OR }}>€ {total.toFixed(2)}</span>
+              </div>
+            </div>
+            {INFO_BANNER && (
+              <div style={{ marginTop: 14, padding: "10px 14px", borderRadius: 8, background: "rgba(212,148,58,0.12)", border: "1px solid rgba(212,148,58,0.3)", fontSize: 12, color: OR, lineHeight: 1.4, fontWeight: 600 }}>
+                ⚠️ {INFO_BANNER}
+              </div>
+            )}
+            <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 12 }}>
+              <div><label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Name *</label><input value={name} onChange={e => setName(e.target.value)} placeholder="Din Name" style={iS} /></div>
+              <div><label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Telefonnummer *</label><input type="tel" inputMode="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+43..." style={iS} /></div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Abholziit *</label>
+                {slots.length > 0 ? (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {slots.slice(0, 12).map(s => (
+                      <button key={s} onClick={() => setTime(s)} style={{ padding: "7px 13px", borderRadius: 7, background: time === s ? S : "rgba(240,235,224,0.06)", border: time === s ? `1px solid ${SL}` : "1px solid rgba(240,235,224,0.1)", color: time === s ? "#fff" : CRD, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.2s" }}>{s}</button>
+                    ))}
+                  </div>
+                ) : <div style={{ padding: 10, fontSize: 13, color: CRD }}>Aktuell koane Abholziita verfügbar</div>}
+              </div>
+              <div><label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Anmerkunga (optional)</label><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="z.B. ohni Zwiebla, extra Sauce..." rows={3} style={{ ...iS, resize: "vertical" }} /></div>
+            </div>
+            <button onClick={() => { if (name && phone && time) setStep("done"); }} disabled={!name || !phone || !time} style={{ width: "100%", marginTop: 18, padding: "14px", background: (name && phone && time) ? S : "rgba(240,235,224,0.08)", border: "none", borderRadius: 10, color: "#fff", fontSize: 15, fontWeight: 700, cursor: (name && phone && time) ? "pointer" : "not-allowed", transition: "all 0.3s" }}>Bstellung ufgea 🔥</button>
+            <div style={{ marginTop: 10, fontSize: 11, color: "rgba(240,235,224,0.3)", textAlign: "center" }}>Bezahlung bi da Abholung (Bar oder Karta)</div>
+          </div>
+        )}
+
+        {/* ===== DONE ===== */}
+        {step === "done" && (
+          <div style={{ paddingTop: 50, textAlign: "center" }}>
+            <div style={{ fontSize: 56, marginBottom: 12 }}>✅</div>
+            <h2 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 6px" }}>Bstellung ufgea!</h2>
+            <p style={{ color: CRD, fontSize: 14 }}>Danke {name}! Dini Bstellung isch iganga.</p>
+            <div style={{ background: "rgba(240,235,224,0.03)", borderRadius: 12, border: "1px solid rgba(240,235,224,0.06)", padding: 18, marginTop: 20, textAlign: "left" }}>
+              <div style={{ fontSize: 12, color: CRD }}>Abholziit</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: OR, marginBottom: 14 }}>{time} Uhr</div>
+              <div style={{ fontSize: 12, color: CRD }}>Adresse</div>
+              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 14 }}>Gewerbestraße 2, 6710 Nenzing</div>
+              <div style={{ fontSize: 12, color: CRD, marginBottom: 4 }}>Dini Bstellung</div>
+              {items.map(it => <div key={it.id} style={{ fontSize: 13, padding: "3px 0" }}>{it.qty}× {it.name} — € {(it.price * it.qty).toFixed(2)}</div>)}
+              <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid rgba(240,235,224,0.08)", fontWeight: 800, fontSize: 15 }}>Gesamt: <span style={{ color: OR }}>€ {total.toFixed(2)}</span></div>
+              {notes && <div style={{ marginTop: 10, fontSize: 12, color: CRD }}>Anmerkunga: {notes}</div>}
+            </div>
+            <div style={{ marginTop: 20, padding: "12px 14px", borderRadius: 10, background: "rgba(138,158,138,0.08)", border: "1px solid rgba(138,158,138,0.15)", fontSize: 12, color: CRD, lineHeight: 1.5 }}>Da Manu bereitet dini Bstellung frisch zua. Bezahlung bi da Abholung.</div>
+            <button onClick={() => { setCart({}); setSauceChoices([]); setStep("menu"); setName(""); setPhone(""); setTime(""); setNotes(""); }} style={{ marginTop: 18, padding: "12px 24px", background: "rgba(240,235,224,0.06)", border: "1px solid rgba(240,235,224,0.1)", borderRadius: 8, color: CR, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Neui Bstellung</button>
           </div>
         )}
       </div>
+
+      {/* FLOATING CART */}
+      {step === "menu" && count > 0 && (
+        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: S, boxShadow: "0 -4px 20px rgba(0,0,0,0.4)", zIndex: 100 }}>
+          <button onClick={() => setStep("checkout")} style={{ width: "100%", maxWidth: 520, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", background: "none", border: "none", color: "#fff", cursor: "pointer" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ background: "rgba(0,0,0,0.2)", borderRadius: "50%", width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 13 }}>{count}</span>
+              <span style={{ fontWeight: 600, fontSize: 14 }}>Warakorb aluaga</span>
+            </div>
+            <span style={{ fontWeight: 800, fontSize: 16 }}>€ {total.toFixed(2)}</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
