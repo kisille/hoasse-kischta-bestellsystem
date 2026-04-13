@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 
-// ── CONFIG ──
 const INFO_BANNER = "";
 const BLOCKED_SLOTS_FROM = "";
 const BLOCKED_SLOTS_TO = "";
@@ -70,9 +69,7 @@ function genSlots() {
     let h = sh, m = sm;
     while (h < eh || (h === eh && m <= em - 15)) {
       const t = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-      if (h * 60 + m >= now.getHours() * 60 + now.getMinutes() + 15) {
-        slots.push(t);
-      }
+      if (h * 60 + m >= now.getHours() * 60 + now.getMinutes() + 15) slots.push(t);
       m += 15;
       if (m >= 60) { h++; m = 0; }
     }
@@ -82,7 +79,6 @@ function genSlots() {
 
 export default function App() {
   const [cart, setCart] = useState({});
-  const [sauceChoices, setSauceChoices] = useState([]);
   const [step, setStep] = useState("menu");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -90,23 +86,14 @@ export default function App() {
   const [notes, setNotes] = useState("");
   const [slots, setSlots] = useState([]);
   const [cat, setCat] = useState("Zum Eassa");
-  const [showSaucePicker, setShowSaucePicker] = useState(false);
 
-  useEffect(() => {
-    setSlots(genSlots());
-  }, []);
+  useEffect(() => setSlots(genSlots()), []);
 
-  const add = (id) => {
-    const item = MENU.find(m => m.id === id);
-    if (item && item.isSauce) {
-      setShowSaucePicker(true);
-      return;
-    }
-    setCart(c => ({ ...c, [id]: (c[id] || 0) + 1 }));
-  };
+  const add = id => setCart(c => ({ ...c, [id]: (c[id] || 0) + 1 }));
+  const rem = id => setCart(c => { const n = {...c}; if (n[id] > 1) n[id]--; else delete n[id]; return n; });
 
   const total = Object.entries(cart).reduce((s, [id, q]) => {
-    const i = MENU.find(m => m.id === parseInt(id));
+    const i = MENU.find(m => m.id === +id);
     return s + (i ? i.price * q : 0);
   }, 0);
 
@@ -114,27 +101,24 @@ export default function App() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#2d2d2d", color: "#f0ebe0", fontFamily: "system-ui, sans-serif" }}>
-      {/* Header */}
-      <div style={{ background: "#8a9e8a", padding: "20px 16px", textAlign: "center" }}>
+      <div style={{ background: "#8a9e8a", padding: "20px", textAlign: "center" }}>
         <div style={{ fontSize: "28px", fontWeight: "700" }}>🔥 Manu's Hoasse Kischta</div>
-        <div style={{ fontSize: "14px", opacity: "0.9" }}>Gewerbestraße 2 · 6710 Nenzing</div>
+        <div style={{ fontSize: "14px" }}>Gewerbestraße 2 · 6710 Nenzing</div>
       </div>
 
-      <div style={{ maxWidth: "480px", margin: "0 auto", padding: "16px" }}>
-        <h2 style={{ textAlign: "center", margin: "20px 0 8px" }}>Zum Eassa und z Trinka</h2>
+      <div style={{ maxWidth: "480px", margin: "0 auto", padding: "20px" }}>
+        <h1 style={{ textAlign: "center", marginBottom: "8px" }}>Zum Eassa und z Trinka</h1>
         <p style={{ textAlign: "center", color: "#aaa" }}>Wähle Kategorie und füge Artikel hinzu.</p>
 
-        {/* Warenkorb Button */}
         {count > 0 && (
-          <div style={{ background: "#8a9e8a", color: "white", padding: "14px", borderRadius: "12px", textAlign: "center", margin: "20px 0", fontWeight: "600" }}
-               onClick={() => alert("Checkout kommt gleich – aktuell nur Test")}>
+          <div style={{ background: "#8a9e8a", color: "white", padding: "16px", borderRadius: "12px", textAlign: "center", margin: "20px 0", fontSize: "18px", fontWeight: "600" }}>
             Warenkorb: {count} Artikel — € {total.toFixed(2)}
           </div>
         )}
 
-        <div style={{ textAlign: "center", marginTop: "40px", color: "#666" }}>
-          Die volle Bestell-App wird gerade eingebaut.<br />
-          Bitte warte einen Moment...
+        <div style={{ marginTop: "40px", textAlign: "center", color: "#666" }}>
+          Die volle Bestell-App (mit allen Gerichten, Sauce-Auswahl und Checkout) wird gerade eingebaut.<br/><br/>
+          Sobald du den Code oben ersetzt hast, redeploy einfach nochmal.
         </div>
       </div>
     </div>
