@@ -56,6 +56,16 @@ const CATS = ["Zum Eassa", "Spezial", "Vegi", "Extras", "Getränke", "Bier"];
 const CAT_ICONS = { "Zum Eassa": "🔥", "Spezial": "⭐", "Vegi": "🌿", "Extras": "➕", "Getränke": "🥤", "Bier": "🍺" };
 const HOURS = { 1:[["11:30","13:30"],["17:00","20:00"]], 2:[["11:30","13:30"],["16:30","21:00"]], 3:[["11:30","13:30"],["16:30","21:00"]], 4:[["11:30","13:30"],["16:30","21:00"]], 5:[["11:30","13:30"],["16:30","21:00"]] };
 
+const WEEK_HOURS = [
+  { day: "Montag",     hours: "11:30–13:30, 17:00–20:00" },
+  { day: "Dienstag",   hours: "11:30–13:30, 16:30–21:00" },
+  { day: "Mittwoch",   hours: "11:30–13:30, 16:30–21:00" },
+  { day: "Donnerstag", hours: "11:30–13:30, 16:30–21:00" },
+  { day: "Freitag",    hours: "11:30–13:30, 16:30–21:00" },
+  { day: "Samstag",    hours: "Ruhetag", isRest: true },
+  { day: "Sonntag",    hours: "Ruhetag", isRest: true },
+];
+
 function genSlots() {
   const now = new Date(), ranges = HOURS[now.getDay()];
   if (!ranges) return [];
@@ -82,6 +92,11 @@ function genSlots() {
 }
 
 const S = "#8a9e8a", SL = "#a3b5a3", BG = "#2d2d2d", BGL = "#3a3a3a", CR = "#f0ebe0", CRD = "rgba(240,235,224,0.5)", OR = "#d4943a";
+
+const phoneOk = p => {
+  const c = p.replace(/[\s\-]/g, "");
+  return /^(\+\d{10,15}|00\d{10,15}|06\d{8,12}|\d{10,15})$/.test(c);
+};
 
 function SaucePicker({ onConfirm, onCancel }) {
   const [sel, setSel] = useState([]);
@@ -128,6 +143,8 @@ export default function App() {
   const [cat, setCat] = useState("Zum Eassa");
   const [anim, setAnim] = useState(false);
   const [showSaucePicker, setShowSaucePicker] = useState(false);
+  const [phoneTouched, setPhoneTouched] = useState(false);
+  const [showHours, setShowHours] = useState(false);
   useEffect(() => { setSlots(genSlots()); setTimeout(() => setAnim(true), 100); }, []);
 
   const add = id => {
@@ -141,6 +158,25 @@ export default function App() {
     setShowSaucePicker(false);
     setSauceChoices(prev => [...prev, ...sauces]);
     setCart(c => ({ ...c, [21]: (c[21] || 0) + sauces.length }));
+  };
+
+  const checkoutRem = id => {
+    const qty = cart[id] || 0;
+    if (qty <= 1) {
+      const n = { ...cart };
+      delete n[id];
+      setCart(n);
+      if (+id === 21) setSauceChoices([]);
+      if (Object.keys(n).length === 0) setStep("menu");
+    } else {
+      setCart(c => ({ ...c, [id]: c[id] - 1 }));
+      if (+id === 21) setSauceChoices(p => p.slice(0, -1));
+    }
+  };
+  const checkoutAdd = id => {
+    const item = MENU.find(m => m.id === +id);
+    if (item?.isSauce) { setShowSaucePicker(true); return; }
+    setCart(c => ({ ...c, [id]: (c[id] || 0) + 1 }));
   };
 
   const sauceQty = cart[21] || 0;
@@ -172,8 +208,34 @@ export default function App() {
         </div>
         {step === "menu" && (
           <div style={{ maxWidth: 520, margin: "0 auto", padding: "0 16px 14px" }}>
-            <div style={{ display: "inline-block", background: open ? "rgba(0,0,0,0.15)" : "rgba(180,30,30,0.5)", borderRadius: 8, padding: "4px 14px", fontSize: 12, fontWeight: 600 }}>
-              {open ? `✓ Heute offen (${dayN})` : `✗ Heute gschlossa (${dayN})`}
+            <div style={{ position: "relative", display: "inline-block" }}>
+              <div
+                onClick={() => setShowHours(h => !h)}
+                style={{ display: "inline-flex", alignItems: "center", gap: 6, background: open ? "rgba(0,0,0,0.15)" : "rgba(180,30,30,0.5)", borderRadius: 8, padding: "4px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer", userSelect: "none" }}
+              >
+                <span>{open ? `✓ Heute offen (${dayN})` : `✗ Heute gschlossa (${dayN})`}</span>
+                <span style={{ opacity: 0.65, fontSize: 9 }}>{showHours ? "▲" : "▼"}</span>
+              </div>
+              {showHours && (
+                <>
+                  <div onClick={() => setShowHours(false)} style={{ position: "fixed", inset: 0, zIndex: 50 }} />
+                  <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 51, background: "#262626", border: "1px solid rgba(240,235,224,0.12)", borderRadius: 10, overflow: "hidden", minWidth: 260, boxShadow: "0 6px 28px rgba(0,0,0,0.55)" }} onClick={e => e.stopPropagation()}>
+                    {WEEK_HOURS.map(({ day, hours, isRest }) => {
+                      const isCurrent = day === dayN;
+                      return (
+                        <div key={day} style={{ padding: "8px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", background: isCurrent ? "rgba(138,158,138,0.18)" : "transparent", borderBottom: "1px solid rgba(240,235,224,0.05)" }}>
+                          <span style={{ color: isCurrent ? CR : CRD, fontSize: 13, fontWeight: isCurrent ? 700 : 400 }}>{day}</span>
+                          <span style={{ color: isCurrent ? OR : (isRest ? "rgba(240,235,224,0.3)" : CRD), fontSize: 12, fontWeight: isCurrent ? 700 : 400 }}>{hours}</span>
+                        </div>
+                      );
+                    })}
+                    <div style={{ padding: "7px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(240,235,224,0.03)" }}>
+                      <span style={{ color: "rgba(240,235,224,0.35)", fontSize: 12 }}>Feiertage</span>
+                      <span style={{ color: "rgba(240,235,224,0.35)", fontSize: 12 }}>Geschlossen</span>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -262,9 +324,14 @@ export default function App() {
             <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 14px" }}>Dini Bstellung</h2>
             <div style={{ background: "rgba(240,235,224,0.03)", borderRadius: 12, border: "1px solid rgba(240,235,224,0.06)", overflow: "hidden" }}>
               {items.map((it, i) => (
-                <div key={it.id} style={{ padding: "10px 14px", display: "flex", justifyContent: "space-between", borderBottom: i < items.length - 1 ? "1px solid rgba(240,235,224,0.06)" : "none" }}>
-                  <span style={{ fontSize: 14 }}><strong>{it.qty}×</strong> {it.name}</span>
-                  <span style={{ fontWeight: 700, color: OR, fontSize: 14 }}>€ {(it.price * it.qty).toFixed(2)}</span>
+                <div key={it.id} style={{ padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: i < items.length - 1 ? "1px solid rgba(240,235,224,0.06)" : "none" }}>
+                  <span style={{ fontSize: 13, flex: 1, marginRight: 8, lineHeight: 1.3 }}>{it.name}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+                    <button onClick={() => checkoutRem(it.id)} style={{ width: 24, height: 24, borderRadius: "50%", background: "rgba(240,235,224,0.08)", border: "1px solid rgba(240,235,224,0.15)", color: CR, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>−</button>
+                    <span style={{ fontWeight: 700, fontSize: 13, minWidth: 16, textAlign: "center" }}>{it.qty}</span>
+                    <button onClick={() => checkoutAdd(it.id)} style={{ width: 24, height: 24, borderRadius: "50%", background: S, border: "none", color: "#fff", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>+</button>
+                    <span style={{ fontWeight: 700, color: OR, fontSize: 13, minWidth: 46, textAlign: "right" }}>€ {(it.price * it.qty).toFixed(2)}</span>
+                  </div>
                 </div>
               ))}
               <div style={{ padding: "12px 14px", display: "flex", justifyContent: "space-between", background: "rgba(138,158,138,0.1)", borderTop: "1px solid rgba(138,158,138,0.2)" }}>
@@ -279,7 +346,11 @@ export default function App() {
             )}
             <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 12 }}>
               <div><label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Name *</label><input value={name} onChange={e => setName(e.target.value)} placeholder="Din Name" style={iS} /></div>
-              <div><label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Telefonnummer *</label><input type="tel" inputMode="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+43..." style={iS} /></div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Telefonnummer *</label>
+                <input type="tel" inputMode="tel" value={phone} onChange={e => setPhone(e.target.value)} onBlur={() => setPhoneTouched(true)} placeholder="+43..." style={{ ...iS, borderColor: phoneTouched && !phoneOk(phone) ? "rgba(224,82,82,0.6)" : "rgba(240,235,224,0.12)" }} />
+                {phoneTouched && !phoneOk(phone) && <div style={{ color: "#e05252", fontSize: 12, marginTop: 5, fontWeight: 500 }}>Bitte a gültige Telefonnummer igea</div>}
+              </div>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Abholziit *</label>
                 {slots.length > 0 ? (
@@ -292,7 +363,9 @@ export default function App() {
               </div>
               <div><label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Anmerkunga (optional)</label><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="z.B. ohni Zwiebla, extra Sauce..." rows={3} style={{ ...iS, resize: "vertical" }} /></div>
             </div>
-            <button onClick={() => { if (name && phone && time) setStep("done"); }} disabled={!name || !phone || !time} style={{ width: "100%", marginTop: 18, padding: "14px", background: (name && phone && time) ? S : "rgba(240,235,224,0.08)", border: "none", borderRadius: 10, color: "#fff", fontSize: 15, fontWeight: 700, cursor: (name && phone && time) ? "pointer" : "not-allowed", transition: "all 0.3s" }}>Bstellung ufgea 🔥</button>
+            <div onClick={() => { if (!phoneOk(phone)) setPhoneTouched(true); }}>
+              <button onClick={() => { if (name && phoneOk(phone) && time) setStep("done"); }} disabled={!name || !phoneOk(phone) || !time} style={{ width: "100%", marginTop: 18, padding: "14px", background: (name && phoneOk(phone) && time) ? S : "rgba(240,235,224,0.08)", border: "none", borderRadius: 10, color: "#fff", fontSize: 15, fontWeight: 700, cursor: (name && phoneOk(phone) && time) ? "pointer" : "not-allowed", transition: "all 0.3s" }}>Bstellung ufgea 🔥</button>
+            </div>
             <div style={{ marginTop: 10, fontSize: 11, color: "rgba(240,235,224,0.3)", textAlign: "center" }}>Bezahlung bi da Abholung (Bar oder Karta)</div>
           </div>
         )}
@@ -322,7 +395,7 @@ export default function App() {
       {/* FLOATING CART */}
       {step === "menu" && count > 0 && (
         <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: S, boxShadow: "0 -4px 20px rgba(0,0,0,0.4)", zIndex: 100 }}>
-          <button onClick={() => setStep("checkout")} style={{ width: "100%", maxWidth: 520, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", background: "none", border: "none", color: "#fff", cursor: "pointer" }}>
+          <button onClick={() => { setPhoneTouched(false); setStep("checkout"); }} style={{ width: "100%", maxWidth: 520, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", background: "none", border: "none", color: "#fff", cursor: "pointer" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ background: "rgba(0,0,0,0.2)", borderRadius: "50%", width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 13 }}>{count}</span>
               <span style={{ fontWeight: 600, fontSize: 14 }}>Warakorb aluaga</span>
