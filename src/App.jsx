@@ -194,15 +194,17 @@ export default function App() {
   const iS = { width: "100%", padding: "12px 14px", borderRadius: 8, boxSizing: "border-box", background: BGL, border: "1px solid rgba(240,235,224,0.12)", color: CR, fontSize: 15, outline: "none", fontFamily: "inherit" };
 
   return (
-    <div style={{ minHeight: "100vh", background: BG, fontFamily: "'Segoe UI', -apple-system, sans-serif", color: CR }}>
+    <div style={{ minHeight: "100vh", background: BG, fontFamily: "'Inter', sans-serif", color: CR }}>
       {showSaucePicker && <SaucePicker onConfirm={handleSauceConfirm} onCancel={() => setShowSaucePicker(false)} />}
 
       {/* HEADER */}
       <div style={{ background: S, boxShadow: "0 2px 20px rgba(0,0,0,0.3)" }}>
         <div style={{ maxWidth: 520, margin: "0 auto", padding: "20px 16px", display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>🔥</div>
+          <div style={{ width: 52, height: 52, borderRadius: "50%", overflow: "hidden", background: "#000", flexShrink: 0 }}>
+            <img src="/logo.png" alt="Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          </div>
           <div>
-            <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 0.5 }}>Manu's Hoasse Kischta</div>
+            <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 0.5, fontFamily: "'Roboto', sans-serif" }}>Manu's Hoasse Kischta</div>
             <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>Gewerbestraße 2 · 6710 Nenzing</div>
           </div>
         </div>
@@ -254,7 +256,7 @@ export default function App() {
         {step === "menu" && (
           <div style={{ opacity: anim ? 1 : 0, transition: "opacity 0.4s" }}>
             <div style={{ padding: INFO_BANNER ? "16px 0 8px" : "24px 0 8px", textAlign: "center" }}>
-              <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: CR, letterSpacing: 1, textTransform: "uppercase" }}>Z Eassa und z Trinka</h2>
+              <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: CR, letterSpacing: 1, textTransform: "uppercase", fontFamily: "'Roboto', sans-serif" }}>Z Eassa und z Trinka</h2>
               <div style={{ fontSize: 12, color: CRD, marginTop: 4 }}>Wähl us und bstell zur Abholung</div>
             </div>
 
@@ -320,17 +322,17 @@ export default function App() {
         {/* ===== CHECKOUT ===== */}
         {step === "checkout" && (
           <div style={{ paddingTop: 20 }}>
-            <button onClick={() => setStep("menu")} style={{ background: "none", border: "none", color: S, fontSize: 14, cursor: "pointer", padding: 0, marginBottom: 14, fontWeight: 600 }}>← Zruck zur Karta</button>
-            <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 14px" }}>Dini Bstellung</h2>
+            <button onClick={() => setStep("menu")} style={{ background: "none", border: "none", color: S, fontSize: 14, cursor: "pointer", padding: 0, marginBottom: 14, fontWeight: 600, fontFamily: "'Roboto', sans-serif" }}>← Zruck zur Karta</button>
+            <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 14px", fontFamily: "'Roboto', sans-serif" }}>Dini Bstellung</h2>
             <div style={{ background: "rgba(240,235,224,0.03)", borderRadius: 12, border: "1px solid rgba(240,235,224,0.06)", overflow: "hidden" }}>
               {items.map((it, i) => (
                 <div key={it.id} style={{ padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: i < items.length - 1 ? "1px solid rgba(240,235,224,0.06)" : "none" }}>
                   <span style={{ fontSize: 13, flex: 1, marginRight: 8, lineHeight: 1.3 }}>{it.name}</span>
-                  <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
-                    <button onClick={() => checkoutRem(it.id)} style={{ width: 24, height: 24, borderRadius: "50%", background: "rgba(240,235,224,0.08)", border: "1px solid rgba(240,235,224,0.15)", color: CR, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>−</button>
-                    <span style={{ fontWeight: 700, fontSize: 13, minWidth: 16, textAlign: "center" }}>{it.qty}</span>
-                    <button onClick={() => checkoutAdd(it.id)} style={{ width: 24, height: 24, borderRadius: "50%", background: S, border: "none", color: "#fff", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>+</button>
-                    <span style={{ fontWeight: 700, color: OR, fontSize: 13, minWidth: 46, textAlign: "right" }}>€ {(it.price * it.qty).toFixed(2)}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                    <button onClick={() => checkoutRem(it.id)} style={{ width: 26, height: 26, minWidth: 26, borderRadius: "50%", background: "rgba(240,235,224,0.08)", border: "1px solid rgba(240,235,224,0.18)", color: CR, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, margin: 0, lineHeight: 1, boxSizing: "border-box" }}>−</button>
+                    <span style={{ fontWeight: 700, fontSize: 13, width: 18, textAlign: "center", display: "inline-block", lineHeight: "26px" }}>{it.qty}</span>
+                    <button onClick={() => checkoutAdd(it.id)} style={{ width: 26, height: 26, minWidth: 26, borderRadius: "50%", background: S, border: "none", color: "#fff", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, margin: 0, lineHeight: 1, boxSizing: "border-box" }}>+</button>
+                    <span style={{ fontWeight: 700, color: OR, fontSize: 13, minWidth: 50, textAlign: "right" }}>€ {(it.price * it.qty).toFixed(2)}</span>
                   </div>
                 </div>
               ))}
@@ -374,7 +376,7 @@ export default function App() {
         {step === "done" && (
           <div style={{ paddingTop: 50, textAlign: "center" }}>
             <div style={{ fontSize: 56, marginBottom: 12 }}>✅</div>
-            <h2 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 6px" }}>Bstellung ufgea!</h2>
+            <h2 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 6px", fontFamily: "'Roboto', sans-serif" }}>Bstellung ufgea!</h2>
             <p style={{ color: CRD, fontSize: 14 }}>Danke {name}! Dini Bstellung isch iganga.</p>
             <div style={{ background: "rgba(240,235,224,0.03)", borderRadius: 12, border: "1px solid rgba(240,235,224,0.06)", padding: 18, marginTop: 20, textAlign: "left" }}>
               <div style={{ fontSize: 12, color: CRD }}>Abholziit</div>
@@ -398,7 +400,7 @@ export default function App() {
           <button onClick={() => { setPhoneTouched(false); setStep("checkout"); }} style={{ width: "100%", maxWidth: 520, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", background: "none", border: "none", color: "#fff", cursor: "pointer" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ background: "rgba(0,0,0,0.2)", borderRadius: "50%", width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 13 }}>{count}</span>
-              <span style={{ fontWeight: 600, fontSize: 14 }}>Warakorb aluaga</span>
+              <span style={{ fontWeight: 600, fontSize: 14 }}>Zum Warakorb</span>
             </div>
             <span style={{ fontWeight: 800, fontSize: 16 }}>€ {total.toFixed(2)}</span>
           </button>
