@@ -201,7 +201,7 @@ export default function App() {
       <div style={{ background: S, boxShadow: "0 2px 20px rgba(0,0,0,0.3)" }}>
         <div style={{ maxWidth: 520, margin: "0 auto", padding: "20px 16px", display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ width: 52, height: 52, borderRadius: "50%", overflow: "hidden", background: "#000", flexShrink: 0 }}>
-            <img src="/logo.png" alt="Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            <img src="https://storage.e.jimdo.com/cdn-cgi/image/quality=85,fit=scale-down,format=auto,trim=0;0;0;0,width=1024,height=768/image/407616401/e596ea86-7cc4-4c11-bda9-454b0aad9c1b.jpg" alt="Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </div>
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 0.5, fontFamily: "'Roboto', sans-serif" }}>Manu's Hoasse Kischta</div>
