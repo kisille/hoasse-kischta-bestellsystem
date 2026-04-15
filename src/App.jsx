@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // ── CONFIG: Info-Banner (hier Text ändern oder leer lassen um auszublenden) ──
 const INFO_BANNER = "";
@@ -7,6 +7,14 @@ const INFO_BANNER = "";
 const BLOCKED_SLOTS_FROM = ""; // z.B. "16:30" um Nachmittag zu sperren
 const BLOCKED_SLOTS_TO = "";   // z.B. "21:00"
 // ─────────────────────────────────────────────────────────────────────────────
+
+const CLOSED_MSGS = [
+  "grad zua 🌙",
+  "probiers spöter nomol!",
+  "da Manu schloft scho 😴",
+  "heit nixe mehr 🤷",
+  "morn wieder! 👋",
+];
 
 const SAUCES = ["Ketchup", "Majo", "Senf", "Tartare", "Zwiebel-Sauce", "Curry-Sauce", "Burger-Sauce", "Bosnasosse (hausgemacht)"];
 
@@ -145,6 +153,9 @@ export default function App() {
   const [showSaucePicker, setShowSaucePicker] = useState(false);
   const [phoneTouched, setPhoneTouched] = useState(false);
   const [showHours, setShowHours] = useState(false);
+  const [btnLabel, setBtnLabel] = useState("Bstellung ufgea 🔥");
+  const [btnLabelOpacity, setBtnLabelOpacity] = useState(1);
+  const flashing = useRef(false);
   useEffect(() => { setSlots(genSlots()); setTimeout(() => setAnim(true), 100); }, []);
 
   const add = id => {
@@ -177,6 +188,25 @@ export default function App() {
     const item = MENU.find(m => m.id === +id);
     if (item?.isSauce) { setShowSaucePicker(true); return; }
     setCart(c => ({ ...c, [id]: (c[id] || 0) + 1 }));
+  };
+
+  const fireClosedFlash = () => {
+    if (flashing.current) return;
+    flashing.current = true;
+    const msg = CLOSED_MSGS[Math.floor(Math.random() * CLOSED_MSGS.length)];
+    setBtnLabelOpacity(0);
+    setTimeout(() => {
+      setBtnLabel(msg);
+      setBtnLabelOpacity(1);
+      setTimeout(() => {
+        setBtnLabelOpacity(0);
+        setTimeout(() => {
+          setBtnLabel("Bstellung ufgea 🔥");
+          setBtnLabelOpacity(1);
+          flashing.current = false;
+        }, 200);
+      }, 2500);
+    }, 200);
   };
 
   const sauceQty = cart[21] || 0;
@@ -296,17 +326,17 @@ export default function App() {
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       {qty > 0 && !item.isSauce && (
                         <>
-                          <button onClick={() => rem(item.id)} style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(240,235,224,0.08)", border: "1px solid rgba(240,235,224,0.15)", color: CR, fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
+                          <button onClick={() => rem(item.id)} style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(240,235,224,0.08)", border: "1px solid rgba(240,235,224,0.15)", color: CR, fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, lineHeight: 1, boxSizing: "border-box" }}><span style={{ display: "block", lineHeight: 1 }}>−</span></button>
                           <span style={{ fontWeight: 700, fontSize: 15, minWidth: 18, textAlign: "center" }}>{qty}</span>
                         </>
                       )}
                       {item.isSauce && qty > 0 && (
                         <>
-                          <button onClick={() => { setCart(c => { const n = {...c}; delete n[21]; return n; }); setSauceChoices([]); }} style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(240,235,224,0.08)", border: "1px solid rgba(240,235,224,0.15)", color: CR, fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+                          <button onClick={() => { setCart(c => { const n = {...c}; delete n[21]; return n; }); setSauceChoices([]); }} style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(240,235,224,0.08)", border: "1px solid rgba(240,235,224,0.15)", color: CR, fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, lineHeight: 1, boxSizing: "border-box" }}><span style={{ display: "block", lineHeight: 1 }}>✕</span></button>
                           <span style={{ fontWeight: 700, fontSize: 15, minWidth: 18, textAlign: "center" }}>{qty}</span>
                         </>
                       )}
-                      <button onClick={() => add(item.id)} style={{ width: 30, height: 30, borderRadius: "50%", background: S, border: "none", color: "#fff", fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+                      <button onClick={() => add(item.id)} style={{ width: 30, height: 30, borderRadius: "50%", background: S, border: "none", color: "#fff", fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, lineHeight: 1, boxSizing: "border-box" }}><span style={{ display: "block", lineHeight: 1 }}>+</span></button>
                     </div>
                   </div>
                 );
@@ -329,9 +359,9 @@ export default function App() {
                 <div key={it.id} style={{ padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: i < items.length - 1 ? "1px solid rgba(240,235,224,0.06)" : "none" }}>
                   <span style={{ fontSize: 13, flex: 1, marginRight: 8, lineHeight: 1.3 }}>{it.name}</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                    <button onClick={() => checkoutRem(it.id)} style={{ width: 26, height: 26, minWidth: 26, borderRadius: "50%", background: "rgba(240,235,224,0.08)", border: "1px solid rgba(240,235,224,0.18)", color: CR, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, margin: 0, lineHeight: 1, boxSizing: "border-box" }}>−</button>
+                    <button onClick={() => checkoutRem(it.id)} style={{ width: 26, height: 26, minWidth: 26, borderRadius: "50%", background: "rgba(240,235,224,0.08)", border: "1px solid rgba(240,235,224,0.18)", color: CR, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, margin: 0, lineHeight: 1, boxSizing: "border-box" }}><span style={{ display: "block", lineHeight: 1 }}>−</span></button>
                     <span style={{ fontWeight: 700, fontSize: 13, width: 18, textAlign: "center", display: "inline-block", lineHeight: "26px" }}>{it.qty}</span>
-                    <button onClick={() => checkoutAdd(it.id)} style={{ width: 26, height: 26, minWidth: 26, borderRadius: "50%", background: S, border: "none", color: "#fff", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, margin: 0, lineHeight: 1, boxSizing: "border-box" }}>+</button>
+                    <button onClick={() => checkoutAdd(it.id)} style={{ width: 26, height: 26, minWidth: 26, borderRadius: "50%", background: S, border: "none", color: "#fff", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, margin: 0, lineHeight: 1, boxSizing: "border-box" }}><span style={{ display: "block", lineHeight: 1 }}>+</span></button>
                     <span style={{ fontWeight: 700, color: OR, fontSize: 13, minWidth: 50, textAlign: "right" }}>€ {(it.price * it.qty).toFixed(2)}</span>
                   </div>
                 </div>
@@ -365,8 +395,18 @@ export default function App() {
               </div>
               <div><label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Anmerkunga (optional)</label><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="z.B. ohni Zwiebla, extra Sauce..." rows={3} style={{ ...iS, resize: "vertical" }} /></div>
             </div>
-            <div onClick={() => { if (!phoneOk(phone)) setPhoneTouched(true); }}>
-              <button onClick={() => { if (name && phoneOk(phone) && time) setStep("done"); }} disabled={!name || !phoneOk(phone) || !time} style={{ width: "100%", marginTop: 18, padding: "14px", background: (name && phoneOk(phone) && time) ? S : "rgba(240,235,224,0.08)", border: "none", borderRadius: 10, color: "#fff", fontSize: 15, fontWeight: 700, cursor: (name && phoneOk(phone) && time) ? "pointer" : "not-allowed", transition: "all 0.3s" }}>Bstellung ufgea 🔥</button>
+            <div onClick={() => { if (slots.length > 0 && !phoneOk(phone)) setPhoneTouched(true); }}>
+              <button
+                onClick={() => {
+                  if (name && phoneOk(phone) && time) { setStep("done"); return; }
+                  if (slots.length === 0) { fireClosedFlash(); return; }
+                  if (!phoneOk(phone)) setPhoneTouched(true);
+                }}
+                disabled={slots.length === 0 ? false : (!name || !phoneOk(phone) || !time)}
+                style={{ width: "100%", marginTop: 18, padding: "14px", background: (name && phoneOk(phone) && time) ? S : "rgba(240,235,224,0.08)", border: "none", borderRadius: 10, color: "#fff", fontSize: 15, fontWeight: 700, cursor: (name && phoneOk(phone) && time) || slots.length === 0 ? "pointer" : "not-allowed", transition: "background 0.3s" }}
+              >
+                <span style={{ transition: "opacity 0.2s", opacity: btnLabelOpacity, display: "inline-block" }}>{btnLabel}</span>
+              </button>
             </div>
             <div style={{ marginTop: 10, fontSize: 11, color: "rgba(240,235,224,0.3)", textAlign: "center" }}>Bezahlung bi da Abholung (Bar oder Karta)</div>
           </div>
