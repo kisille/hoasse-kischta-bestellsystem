@@ -62,7 +62,7 @@ const MENU = [
 
 const CATS = ["Zum Eassa", "Spezial", "Vegi", "Extras", "Getränke", "Bier"];
 const CAT_ICONS = { "Zum Eassa": "🔥", "Spezial": "⭐", "Vegi": "🌿", "Extras": "➕", "Getränke": "🥤", "Bier": "🍺" };
-const HOURS = { 1:[["11:30","13:30"],["17:00","20:00"]], 2:[["11:30","13:30"],["16:30","21:00"]], /*TEST: 3:[["11:30","13:30"],["16:30","21:00"]],*/ 4:[["11:30","13:30"],["16:30","21:00"]], 5:[["11:30","13:30"],["16:30","21:00"]] };
+const HOURS = { 1:[["11:30","13:30"],["17:00","20:00"]], 2:[["11:30","13:30"],["16:30","21:00"]], 3:[["11:30","13:30"],["16:30","21:00"]], 4:[["11:30","13:30"],["16:30","21:00"]], 5:[["11:30","13:30"],["16:30","21:00"]] };
 
 const WEEK_HOURS = [
   { day: "Montag",     hours: "11:30–13:30, 17:00–20:00" },
@@ -156,6 +156,12 @@ export default function App() {
   const [btnLabel, setBtnLabel] = useState("Bstellung ufgea 🔥");
   const [btnLabelOpacity, setBtnLabelOpacity] = useState(1);
   const flashing = useRef(false);
+  const msgQueue = useRef([]);
+  const nextClosedMsg = () => {
+    if (msgQueue.current.length === 0)
+      msgQueue.current = [...CLOSED_MSGS].sort(() => Math.random() - 0.5);
+    return msgQueue.current.pop();
+  };
   useEffect(() => { setSlots(genSlots()); setTimeout(() => setAnim(true), 100); }, []);
 
   const add = id => {
@@ -193,7 +199,7 @@ export default function App() {
   const fireClosedFlash = () => {
     if (flashing.current) return;
     flashing.current = true;
-    const msg = CLOSED_MSGS[Math.floor(Math.random() * CLOSED_MSGS.length)];
+    const msg = nextClosedMsg();
     setBtnLabelOpacity(0);
     setTimeout(() => {
       setBtnLabel(msg);
