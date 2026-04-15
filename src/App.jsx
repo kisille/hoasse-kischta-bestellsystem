@@ -152,6 +152,7 @@ export default function App() {
   const [anim, setAnim] = useState(false);
   const [showSaucePicker, setShowSaucePicker] = useState(false);
   const [phoneTouched, setPhoneTouched] = useState(false);
+  const [nameTouched, setNameTouched] = useState(false);
   const [showHours, setShowHours] = useState(false);
   const [btnLabel, setBtnLabel] = useState("Bstellung ufgea 🔥");
   const [btnLabelOpacity, setBtnLabelOpacity] = useState(1);
@@ -383,7 +384,11 @@ export default function App() {
               </div>
             )}
             <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 12 }}>
-              <div><label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Name *</label><input value={name} onChange={e => setName(e.target.value)} placeholder="Din Name" style={iS} /></div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Name *</label>
+                <input value={name} onChange={e => setName(e.target.value)} placeholder="Din Name" style={{ ...iS, borderColor: nameTouched && !name ? "rgba(224,82,82,0.6)" : "rgba(240,235,224,0.12)" }} />
+                {nameTouched && !name && <div style={{ color: "#e05252", fontSize: 12, marginTop: 5, fontWeight: 500 }}>Bitte din Namen igea</div>}
+              </div>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Telefonnummer *</label>
                 <input type="tel" inputMode="tel" value={phone} onChange={e => setPhone(e.target.value)} onBlur={() => setPhoneTouched(true)} placeholder="+43..." style={{ ...iS, borderColor: phoneTouched && !phoneOk(phone) ? "rgba(224,82,82,0.6)" : "rgba(240,235,224,0.12)" }} />
@@ -401,11 +406,12 @@ export default function App() {
               </div>
               <div><label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Anmerkunga (optional)</label><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="z.B. ohni Zwiebla, extra Sauce..." rows={3} style={{ ...iS, resize: "vertical" }} /></div>
             </div>
-            <div onClick={() => { if (slots.length > 0 && !phoneOk(phone)) setPhoneTouched(true); }}>
+            <div>
               <button
                 onClick={() => {
                   if (name && phoneOk(phone) && time) { setStep("done"); return; }
                   if (slots.length === 0) { fireClosedFlash(); return; }
+                  if (!name) setNameTouched(true);
                   if (!phoneOk(phone)) setPhoneTouched(true);
                 }}
                 disabled={slots.length === 0 ? false : (!name || !phoneOk(phone) || !time)}
