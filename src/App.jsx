@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { supabase } from "./supabase";
 
 // ── CONFIG: Info-Banner (hier Text ändern oder leer lassen um auszublenden) ──
 const INFO_BANNER = "";
@@ -74,7 +75,7 @@ const WEEK_HOURS = [
   { day: "Sonntag",    hours: "Ruhetag", isRest: true },
 ];
 
-function genSlots() {
+function genSlots(extra = 0) {
   const now = new Date(), ranges = HOURS[now.getDay()];
   if (!ranges) return [];
   const slots = [];
@@ -83,7 +84,7 @@ function genSlots() {
     let h = sh, m = sm;
     while (h < eh || (h === eh && m <= em - 15)) {
       const t = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-      if (h * 60 + m >= now.getHours() * 60 + now.getMinutes() + 15) {
+      if (h * 60 + m >= now.getHours() * 60 + now.getMinutes() + 25 + extra) {
         if (BLOCKED_SLOTS_FROM && BLOCKED_SLOTS_TO) {
           const [bfh, bfm] = BLOCKED_SLOTS_FROM.split(":").map(Number);
           const [bth, btm] = BLOCKED_SLOTS_TO.split(":").map(Number);
@@ -156,6 +157,12 @@ export default function App() {
   const [timeTouched, setTimeTouched] = useState(false);
   const [shaking, setShaking] = useState(false);
   const [showHours, setShowHours] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [slotCounts, setSlotCounts] = useState({});
+  const [paused, setPaused] = useState(false);
+  const [extraMinutes, setExtraMinutes] = useState(0);
+  const [slotCapacity, setSlotCapacity] = useState(3);
   const [btnLabel, setBtnLabel] = useState("Bstellung ufgea 🔥");
   const [btnLabelOpacity, setBtnLabelOpacity] = useState(1);
   const flashing = useRef(false);
@@ -166,6 +173,27 @@ export default function App() {
     return msgQueue.current.pop();
   };
   useEffect(() => { setSlots(genSlots()); setTimeout(() => setAnim(true), 100); }, []);
+  useEffect(() => {
+    if (step !== "checkout") return;
+    const today = new Date().toISOString().slice(0, 10);
+    supabase.from("settings").select("*").then(({ data }) => {
+      if (!data) return;
+      data.forEach(({ key, value }) => {
+        if (key === "paused") setPaused(value === "true");
+        if (key === "extra_minutes") setExtraMinutes(Number(value));
+        if (key === "slot_capacity") setSlotCapacity(Number(value));
+      });
+    });
+    supabase.from("orders").select("pickup_time")
+      .eq("pickup_date", today).neq("status", "cancelled")
+      .then(({ data }) => {
+        const counts = {};
+        (data || []).forEach(({ pickup_time }) => {
+          counts[pickup_time] = (counts[pickup_time] || 0) + 1;
+        });
+        setSlotCounts(counts);
+      });
+  }, [step]);
 
   const add = id => {
     const item = MENU.find(m => m.id === id);
@@ -231,6 +259,7 @@ export default function App() {
   const open = !!HOURS[new Date().getDay()];
   const dayN = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"][new Date().getDay()];
   const iS = { width: "100%", padding: "12px 14px", borderRadius: 8, boxSizing: "border-box", background: BGL, border: "1px solid rgba(240,235,224,0.12)", color: CR, fontSize: 15, outline: "none", fontFamily: "inherit" };
+  const availableSlots = genSlots(extraMinutes).filter(s => (slotCounts[s] || 0) < slotCapacity);
 
   return (
     <div style={{ minHeight: "100vh", background: BG, fontFamily: "'Inter', sans-serif", color: CR }}>
@@ -385,47 +414,76 @@ export default function App() {
                 ⚠️ {INFO_BANNER}
               </div>
             )}
-            <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 12 }}>
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Name *</label>
-                <input value={name} onChange={e => setName(e.target.value)} placeholder="Din Name" style={{ ...iS, borderColor: nameTouched && !name ? "rgba(224,82,82,0.6)" : "rgba(240,235,224,0.12)" }} />
-                {nameTouched && !name && <div style={{ color: "#e05252", fontSize: 12, marginTop: 5, fontWeight: 500 }}>Bitte din Namen igea</div>}
+            {paused ? (
+              <div style={{ marginTop: 20, padding: "18px 16px", borderRadius: 12, background: "rgba(212,148,58,0.1)", border: "1px solid rgba(212,148,58,0.3)", textAlign: "center" }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>⏳</div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: OR, marginBottom: 4 }}>Grad viel los!</div>
+                <div style={{ fontSize: 13, color: CRD }}>Bitte in a paar Minuta nochmal versuchen.</div>
               </div>
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Telefonnummer *</label>
-                <input type="tel" inputMode="tel" value={phone} onChange={e => setPhone(e.target.value)} onBlur={() => setPhoneTouched(true)} placeholder="+43..." style={{ ...iS, borderColor: phoneTouched && !phoneOk(phone) ? "rgba(224,82,82,0.6)" : "rgba(240,235,224,0.12)" }} />
-                {phoneTouched && !phoneOk(phone) && <div style={{ color: "#e05252", fontSize: 12, marginTop: 5, fontWeight: 500 }}>Bitte a gültige Telefonnummer igea</div>}
-              </div>
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Abholziit *</label>
-                {slots.length > 0 ? (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: 6, borderRadius: 8, border: timeTouched && !time ? "1px solid rgba(224,82,82,0.6)" : "1px solid transparent", transition: "border-color 0.2s" }}>
-                    {slots.slice(0, 12).map(s => (
-                      <button key={s} onClick={() => { setTime(s); setTimeTouched(false); }} style={{ padding: "7px 13px", borderRadius: 7, background: time === s ? S : "rgba(240,235,224,0.06)", border: time === s ? `1px solid ${SL}` : "1px solid rgba(240,235,224,0.1)", color: time === s ? "#fff" : CRD, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.2s" }}>{s}</button>
-                    ))}
+            ) : (
+              <>
+                <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Name *</label>
+                    <input value={name} onChange={e => setName(e.target.value)} placeholder="Din Name" style={{ ...iS, borderColor: nameTouched && !name ? "rgba(224,82,82,0.6)" : "rgba(240,235,224,0.12)" }} />
+                    {nameTouched && !name && <div style={{ color: "#e05252", fontSize: 12, marginTop: 5, fontWeight: 500 }}>Bitte din Namen igea</div>}
                   </div>
-                ) : <div style={{ padding: 10, fontSize: 13, color: CRD }}>Aktuell koane Abholziita verfügbar</div>}
-                {timeTouched && !time && slots.length > 0 && <div style={{ color: "#e05252", fontSize: 12, marginTop: 5, fontWeight: 500 }}>Bitte a Abholziit wähla</div>}
-              </div>
-              <div><label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Anmerkunga (optional)</label><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="z.B. ohni Zwiebla, extra Sauce..." rows={3} style={{ ...iS, resize: "vertical" }} /></div>
-            </div>
-            <style>{`@keyframes formShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}`}</style>
-            <div style={{ animation: shaking ? "formShake 0.4s ease" : "none" }}>
-              <button
-                onClick={() => {
-                  if (name && phoneOk(phone) && time) { setStep("done"); return; }
-                  if (slots.length === 0) { fireClosedFlash(); return; }
-                  setNameTouched(true);
-                  setPhoneTouched(true);
-                  setTimeTouched(true);
-                  setShaking(true);
-                  setTimeout(() => setShaking(false), 400);
-                }}
-                style={{ width: "100%", marginTop: 18, padding: "14px", background: (name && phoneOk(phone) && time) ? S : "rgba(240,235,224,0.08)", border: "none", borderRadius: 10, color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", transition: "background 0.3s" }}
-              >
-                <span style={{ transition: "opacity 0.2s", opacity: btnLabelOpacity, display: "inline-block" }}>{btnLabel}</span>
-              </button>
-            </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Telefonnummer *</label>
+                    <input type="tel" inputMode="tel" value={phone} onChange={e => setPhone(e.target.value)} onBlur={() => setPhoneTouched(true)} placeholder="+43..." style={{ ...iS, borderColor: phoneTouched && !phoneOk(phone) ? "rgba(224,82,82,0.6)" : "rgba(240,235,224,0.12)" }} />
+                    {phoneTouched && !phoneOk(phone) && <div style={{ color: "#e05252", fontSize: 12, marginTop: 5, fontWeight: 500 }}>Bitte a gültige Telefonnummer igea</div>}
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Abholziit *</label>
+                    {availableSlots.length > 0 ? (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: 6, borderRadius: 8, border: timeTouched && !time ? "1px solid rgba(224,82,82,0.6)" : "1px solid transparent", transition: "border-color 0.2s" }}>
+                        {availableSlots.slice(0, 12).map(s => (
+                          <button key={s} onClick={() => { setTime(s); setTimeTouched(false); }} style={{ padding: "7px 13px", borderRadius: 7, background: time === s ? S : "rgba(240,235,224,0.06)", border: time === s ? `1px solid ${SL}` : "1px solid rgba(240,235,224,0.1)", color: time === s ? "#fff" : CRD, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.2s" }}>{s}</button>
+                        ))}
+                      </div>
+                    ) : <div style={{ padding: 10, fontSize: 13, color: CRD }}>Aktuell koane Abholziita verfügbar</div>}
+                    {timeTouched && !time && availableSlots.length > 0 && <div style={{ color: "#e05252", fontSize: 12, marginTop: 5, fontWeight: 500 }}>Bitte a Abholziit wähla</div>}
+                  </div>
+                  <div><label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Anmerkunga (optional)</label><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="z.B. ohni Zwiebla, extra Sauce..." rows={3} style={{ ...iS, resize: "vertical" }} /></div>
+                </div>
+                <style>{`@keyframes formShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}`}</style>
+                <div style={{ animation: shaking ? "formShake 0.4s ease" : "none" }}>
+                  <button
+                    onClick={async () => {
+                      if (name && phoneOk(phone) && time) {
+                        setSubmitting(true);
+                        setSubmitError("");
+                        const today = new Date().toISOString().slice(0, 10);
+                        const { error } = await supabase.from("orders").insert({
+                          pickup_date: today,
+                          pickup_time: time,
+                          name, phone,
+                          items: items.map(it => ({ id: it.id, name: it.name, qty: it.qty, price: it.price })),
+                          total,
+                          notes,
+                        });
+                        setSubmitting(false);
+                        if (error) { setSubmitError("Fehler beim Speichern – bitte nochmal versuchen."); return; }
+                        setStep("done");
+                        return;
+                      }
+                      if (availableSlots.length === 0) { fireClosedFlash(); return; }
+                      setNameTouched(true);
+                      setPhoneTouched(true);
+                      setTimeTouched(true);
+                      setShaking(true);
+                      setTimeout(() => setShaking(false), 400);
+                    }}
+                    style={{ width: "100%", marginTop: 18, padding: "14px", background: (name && phoneOk(phone) && time) ? S : "rgba(240,235,224,0.08)", border: "none", borderRadius: 10, color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", transition: "background 0.3s", opacity: submitting ? 0.7 : 1 }}
+                  >
+                    <span style={{ transition: "opacity 0.2s", opacity: btnLabelOpacity, display: "inline-block" }}>
+                      {submitting ? "Wird gschickt…" : btnLabel}
+                    </span>
+                  </button>
+                </div>
+                {submitError && <div style={{ color: "#e05252", fontSize: 12, marginTop: 8, textAlign: "center", fontWeight: 500 }}>{submitError}</div>}
+              </>
+            )}
             <div style={{ marginTop: 10, fontSize: 11, color: "rgba(240,235,224,0.3)", textAlign: "center" }}>Bezahlung bi da Abholung (Bar oder Karta)</div>
           </div>
         )}
