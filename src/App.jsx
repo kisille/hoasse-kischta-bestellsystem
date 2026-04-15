@@ -153,6 +153,8 @@ export default function App() {
   const [showSaucePicker, setShowSaucePicker] = useState(false);
   const [phoneTouched, setPhoneTouched] = useState(false);
   const [nameTouched, setNameTouched] = useState(false);
+  const [timeTouched, setTimeTouched] = useState(false);
+  const [shaking, setShaking] = useState(false);
   const [showHours, setShowHours] = useState(false);
   const [btnLabel, setBtnLabel] = useState("Bstellung ufgea 🔥");
   const [btnLabelOpacity, setBtnLabelOpacity] = useState(1);
@@ -397,25 +399,29 @@ export default function App() {
               <div>
                 <label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Abholziit *</label>
                 {slots.length > 0 ? (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: 6, borderRadius: 8, border: timeTouched && !time ? "1px solid rgba(224,82,82,0.6)" : "1px solid transparent", transition: "border-color 0.2s" }}>
                     {slots.slice(0, 12).map(s => (
-                      <button key={s} onClick={() => setTime(s)} style={{ padding: "7px 13px", borderRadius: 7, background: time === s ? S : "rgba(240,235,224,0.06)", border: time === s ? `1px solid ${SL}` : "1px solid rgba(240,235,224,0.1)", color: time === s ? "#fff" : CRD, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.2s" }}>{s}</button>
+                      <button key={s} onClick={() => { setTime(s); setTimeTouched(false); }} style={{ padding: "7px 13px", borderRadius: 7, background: time === s ? S : "rgba(240,235,224,0.06)", border: time === s ? `1px solid ${SL}` : "1px solid rgba(240,235,224,0.1)", color: time === s ? "#fff" : CRD, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.2s" }}>{s}</button>
                     ))}
                   </div>
                 ) : <div style={{ padding: 10, fontSize: 13, color: CRD }}>Aktuell koane Abholziita verfügbar</div>}
+                {timeTouched && !time && slots.length > 0 && <div style={{ color: "#e05252", fontSize: 12, marginTop: 5, fontWeight: 500 }}>Bitte a Abholziit wähla</div>}
               </div>
               <div><label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Anmerkunga (optional)</label><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="z.B. ohni Zwiebla, extra Sauce..." rows={3} style={{ ...iS, resize: "vertical" }} /></div>
             </div>
-            <div>
+            <style>{`@keyframes formShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}`}</style>
+            <div style={{ animation: shaking ? "formShake 0.4s ease" : "none" }}>
               <button
                 onClick={() => {
                   if (name && phoneOk(phone) && time) { setStep("done"); return; }
                   if (slots.length === 0) { fireClosedFlash(); return; }
-                  if (!name) setNameTouched(true);
-                  if (!phoneOk(phone)) setPhoneTouched(true);
+                  setNameTouched(true);
+                  setPhoneTouched(true);
+                  setTimeTouched(true);
+                  setShaking(true);
+                  setTimeout(() => setShaking(false), 400);
                 }}
-                disabled={slots.length === 0 ? false : (!name || !phoneOk(phone) || !time)}
-                style={{ width: "100%", marginTop: 18, padding: "14px", background: (name && phoneOk(phone) && time) ? S : "rgba(240,235,224,0.08)", border: "none", borderRadius: 10, color: "#fff", fontSize: 15, fontWeight: 700, cursor: (name && phoneOk(phone) && time) || slots.length === 0 ? "pointer" : "not-allowed", transition: "background 0.3s" }}
+                style={{ width: "100%", marginTop: 18, padding: "14px", background: (name && phoneOk(phone) && time) ? S : "rgba(240,235,224,0.08)", border: "none", borderRadius: 10, color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", transition: "background 0.3s" }}
               >
                 <span style={{ transition: "opacity 0.2s", opacity: btnLabelOpacity, display: "inline-block" }}>{btnLabel}</span>
               </button>
