@@ -25,9 +25,8 @@ const CLOSED_MSGS_END = [
 ];
 const CLOSED_MSGS_DAY = [
   "heit Ruhetag 🌿",
-  "morn wieder! 👋",
   "da Manu hat frei 😎",
-  "gonsch morga wieder 🙏",
+  "koan Betrieb heit 🙏",
 ];
 
 const SAUCES = ["Ketchup", "Majo", "Senf", "Tartare", "Zwiebel-Sauce", "Curry-Sauce", "Burger-Sauce", "Bosnasosse (hausgemacht)"];
@@ -255,7 +254,14 @@ export default function App() {
       const [sh, sm] = s.split(":").map(Number); return sh * 60 + sm > nowMin;
     });
     const context = !open ? "day" : hasLaterToday ? "break" : "end";
-    const msgs = context === "day" ? CLOSED_MSGS_DAY : context === "break" ? CLOSED_MSGS_BREAK : CLOSED_MSGS_END;
+    const DAY_NAMES = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
+    const todayN = new Date().getDay();
+    const nextOpenOffset = [1,2,3,4,5,6,7].find(i => HOURS[(todayN + i) % 7]);
+    const nextOpenName = DAY_NAMES[(todayN + nextOpenOffset) % 7];
+    const tomorrowOpen = !!HOURS[(todayN + 1) % 7];
+    const dayClosingMsg = tomorrowOpen ? "morn wieder! 👋" : `am ${nextOpenName} wieder! 👋`;
+    const dynamicDayMsgs = [...CLOSED_MSGS_DAY, dayClosingMsg];
+    const msgs = context === "day" ? dynamicDayMsgs : context === "break" ? CLOSED_MSGS_BREAK : CLOSED_MSGS_END;
     const msg = nextClosedMsg(context, msgs);
     setBtnLabelOpacity(0);
     setTimeout(() => {
