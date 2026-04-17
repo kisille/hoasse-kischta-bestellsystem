@@ -7,6 +7,20 @@ const BG = "#2d2d2d", BGL = "#3a3a3a", CR = "#f0ebe0", CRD = "rgba(240,235,224,0
 const TODAY = new Date().toLocaleDateString("de-AT", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
 const TODAY_ISO = new Date().toISOString().slice(0, 10);
 
+const playAlert = () => {
+  const ctx = new AudioContext();
+  [[660, 0], [880, 0.18]].forEach(([freq, delay]) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.3, ctx.currentTime + delay);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.3);
+    osc.start(ctx.currentTime + delay);
+    osc.stop(ctx.currentTime + delay + 0.35);
+  });
+};
+
 function StatusBadge({ status }) {
   const map = { pending: ["#d4943a", "Offen"], done: [S, "Fertig ✓"], cancelled: ["#e05252", "Storniert"] };
   const [color, label] = map[status] || [CRD, status];
@@ -18,6 +32,7 @@ export default function Admin() {
   const [pinOk, setPinOk] = useState(false);
   const [pinError, setPinError] = useState(false);
   const [orders, setOrders] = useState([]);
+  const [newIds, setNewIds] = useState(new Set());
   const [loading, setLoading] = useState(false);
   const [paused, setPaused] = useState(false);
   const [extraMinutes, setExtraMinutes] = useState(0);
@@ -40,8 +55,19 @@ export default function Admin() {
   useEffect(() => {
     if (!pinOk) return;
     fetchAll();
-    const iv = setInterval(fetchAll, 30000);
-    return () => clearInterval(iv);
+    const iv = setInterval(fetchAll, 60000);
+    const channel = supabase.channel("admin-orders")
+      .on("postgres_changes",
+        { event: "INSERT", schema: "public", table: "orders", filter: `pickup_date=eq.${TODAY_ISO}` },
+        ({ new: order }) => {
+          setOrders(prev => [...prev, order].sort((a, b) => a.pickup_time.localeCompare(b.pickup_time)));
+          setNewIds(ids => new Set([...ids, order.id]));
+          setTimeout(() => setNewIds(ids => { const s = new Set(ids); s.delete(order.id); return s; }), 4000);
+          playAlert();
+        }
+      )
+      .subscribe();
+    return () => { clearInterval(iv); supabase.removeChannel(channel); };
   }, [pinOk, fetchAll]);
 
   const updateStatus = async (id, status) => {
@@ -97,7 +123,12 @@ export default function Admin() {
             <div style={{ fontSize: 16, fontWeight: 700 }}>Manu's Admin</div>
             <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>{TODAY}</div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {newIds.size > 0 && (
+              <span style={{ background: OR, color: "#fff", borderRadius: 12, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>
+                {newIds.size}× neu 🔔
+              </span>
+            )}
             {loading && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>lädt…</div>}
             <button onClick={fetchAll} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8, color: "#fff", padding: "6px 12px", fontSize: 13, cursor: "pointer" }}>↻</button>
           </div>
@@ -151,7 +182,7 @@ export default function Admin() {
           </div>
         ) : (
           shown.map(o => (
-            <div key={o.id} style={{ background: BGL, borderRadius: 12, padding: 16, marginBottom: 10, border: o.status === "pending" ? "1px solid rgba(138,158,138,0.2)" : "1px solid rgba(240,235,224,0.06)", opacity: o.status !== "pending" ? 0.65 : 1 }}>
+            <div key={o.id} style={{ background: BGL, borderRadius: 12, padding: 16, marginBottom: 10, border: newIds.has(o.id) ? "1px solid rgba(138,158,138,0.8)" : o.status === "pending" ? "1px solid rgba(138,158,138,0.2)" : "1px solid rgba(240,235,224,0.06)", opacity: o.status !== "pending" ? 0.65 : 1, transition: "border 0.3s" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
                 <div>
                   <div style={{ fontSize: 22, fontWeight: 800, color: OR }}>{o.pickup_time} Uhr</div>
