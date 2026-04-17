@@ -198,7 +198,7 @@ export default function App() {
   const add = id => {
     const item = MENU.find(m => m.id === id);
     if (item && item.isSauce) { setShowSaucePicker(true); return; }
-    setCart(c => ({ ...c, [id]: (c[id] || 0) + 1 }));
+    setCart(c => ({ ...c, [id]: Math.min((c[id] || 0) + 1, 10) }));
   };
   const rem = id => setCart(c => { const n = { ...c }; if (n[id] > 1) n[id]--; else delete n[id]; return n; });
 
@@ -224,7 +224,7 @@ export default function App() {
   const checkoutAdd = id => {
     const item = MENU.find(m => m.id === +id);
     if (item?.isSauce) { setShowSaucePicker(true); return; }
-    setCart(c => ({ ...c, [id]: (c[id] || 0) + 1 }));
+    setCart(c => ({ ...c, [id]: Math.min((c[id] || 0) + 1, 10) }));
   };
 
   const fireClosedFlash = () => {
