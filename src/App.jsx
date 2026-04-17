@@ -78,13 +78,17 @@ const WEEK_HOURS = [
 function genSlots(extra = 0) {
   const now = new Date(), ranges = HOURS[now.getDay()];
   if (!ranges) return [];
+  const nowMin = now.getHours() * 60 + now.getMinutes();
   const slots = [];
   for (const [s, e] of ranges) {
     const [sh, sm] = s.split(":").map(Number), [eh, em] = e.split(":").map(Number);
+    const startMin = sh * 60 + sm, endMin = eh * 60 + em;
+    if (nowMin > endMin) continue;
+    if (startMin > nowMin + 30) continue;
     let h = sh, m = sm;
     while (h < eh || (h === eh && m <= em - 15)) {
       const t = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-      if (h * 60 + m >= now.getHours() * 60 + now.getMinutes() + 25 + extra) {
+      if (h * 60 + m >= nowMin + 25 + extra) {
         if (BLOCKED_SLOTS_FROM && BLOCKED_SLOTS_TO) {
           const [bfh, bfm] = BLOCKED_SLOTS_FROM.split(":").map(Number);
           const [bth, btm] = BLOCKED_SLOTS_TO.split(":").map(Number);
@@ -257,9 +261,21 @@ export default function App() {
     return { ...base, qty: q };
   });
   const open = !!HOURS[new Date().getDay()];
+  const currentlyOpen = (() => {
+    const now = new Date(), ranges = HOURS[now.getDay()];
+    if (!ranges) return false;
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    return ranges.some(([s, e]) => {
+      const [sh, sm] = s.split(":").map(Number), [eh, em] = e.split(":").map(Number);
+      return nowMin >= sh * 60 + sm && nowMin <= eh * 60 + em;
+    });
+  })();
   const dayN = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"][new Date().getDay()];
   const iS = { width: "100%", padding: "12px 14px", borderRadius: 8, boxSizing: "border-box", background: BGL, border: "1px solid rgba(240,235,224,0.12)", color: CR, fontSize: 15, outline: "none", fontFamily: "inherit" };
-  const availableSlots = genSlots(extraMinutes).filter(s => (slotCounts[s] || 0) < slotCapacity);
+  const orderExtra = Math.max(0, Math.floor((count - 2) / 2) * 5);
+  const availableSlots = genSlots(extraMinutes + orderExtra)
+    .filter(s => (slotCounts[s] || 0) < slotCapacity)
+    .slice(0, currentlyOpen ? 12 : 2);
 
   return (
     <div style={{ minHeight: "100vh", background: BG, fontFamily: "'Inter', sans-serif", color: CR }}>
