@@ -198,7 +198,7 @@ export default function App() {
   const add = id => {
     const item = MENU.find(m => m.id === id);
     if (item && item.isSauce) { setShowSaucePicker(true); return; }
-    setCart(c => ({ ...c, [id]: Math.min((c[id] || 0) + 1, 10) }));
+    setCart(c => ({ ...c, [id]: (c[id] || 0) + 1 }));
   };
   const rem = id => setCart(c => { const n = { ...c }; if (n[id] > 1) n[id]--; else delete n[id]; return n; });
 
@@ -224,7 +224,7 @@ export default function App() {
   const checkoutAdd = id => {
     const item = MENU.find(m => m.id === +id);
     if (item?.isSauce) { setShowSaucePicker(true); return; }
-    setCart(c => ({ ...c, [id]: Math.min((c[id] || 0) + 1, 10) }));
+    setCart(c => ({ ...c, [id]: (c[id] || 0) + 1 }));
   };
 
   const fireClosedFlash = () => {
@@ -259,7 +259,8 @@ export default function App() {
   const open = !!HOURS[new Date().getDay()];
   const dayN = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"][new Date().getDay()];
   const iS = { width: "100%", padding: "12px 14px", borderRadius: 8, boxSizing: "border-box", background: BGL, border: "1px solid rgba(240,235,224,0.12)", color: CR, fontSize: 15, outline: "none", fontFamily: "inherit" };
-  const availableSlots = genSlots(extraMinutes).filter(s => (slotCounts[s] || 0) < slotCapacity);
+  const orderExtra = Math.max(0, Math.floor((count - 2) / 2) * 5);
+  const availableSlots = genSlots(extraMinutes + orderExtra).filter(s => (slotCounts[s] || 0) < slotCapacity);
 
   return (
     <div style={{ minHeight: "100vh", background: BG, fontFamily: "'Inter', sans-serif", color: CR }}>
