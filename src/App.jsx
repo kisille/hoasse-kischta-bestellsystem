@@ -9,12 +9,24 @@ const BLOCKED_SLOTS_FROM = ""; // z.B. "16:30" um Nachmittag zu sperren
 const BLOCKED_SLOTS_TO = "";   // z.B. "21:00"
 // ─────────────────────────────────────────────────────────────────────────────
 
-const CLOSED_MSGS = [
-  "grad zua 🌙",
-  "probiers spöter nomol!",
-  "da Manu schloft scho 😴",
+const CLOSED_MSGS_BREAK = [
+  "grad Pause ☕",
+  "bald wieder da!",
+  "komm spöter no emol 🕐",
+  "kurze Verschnaufpause 😅",
+  "gleich wieder! 👊",
+];
+const CLOSED_MSGS_END = [
   "heit nixe mehr 🤷",
-  "morn wieder! 👋",
+  "für heit fertig 🌙",
+  "da Manu macht Feierabend 🍺",
+  "bis morn! 👋",
+  "jetzt wird aufgräumt 🧹",
+];
+const CLOSED_MSGS_DAY = [
+  "heit Ruhetag 🌿",
+  "da Manu hat frei 😎",
+  "koan Betrieb heit 🙏",
 ];
 
 const SAUCES = ["Ketchup", "Majo", "Senf", "Tartare", "Zwiebel-Sauce", "Curry-Sauce", "Burger-Sauce", "Bosnasosse (hausgemacht)"];
@@ -171,9 +183,12 @@ export default function App() {
   const [btnLabelOpacity, setBtnLabelOpacity] = useState(1);
   const flashing = useRef(false);
   const msgQueue = useRef([]);
-  const nextClosedMsg = () => {
-    if (msgQueue.current.length === 0)
-      msgQueue.current = [...CLOSED_MSGS].sort(() => Math.random() - 0.5);
+  const msgContext = useRef("");
+  const nextClosedMsg = (context, msgs) => {
+    if (msgQueue.current.length === 0 || msgContext.current !== context) {
+      msgQueue.current = [...msgs].sort(() => Math.random() - 0.5);
+      msgContext.current = context;
+    }
     return msgQueue.current.pop();
   };
   useEffect(() => { setSlots(genSlots()); setTimeout(() => setAnim(true), 100); }, []);
@@ -234,7 +249,20 @@ export default function App() {
   const fireClosedFlash = () => {
     if (flashing.current) return;
     flashing.current = true;
-    const msg = nextClosedMsg();
+    const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+    const hasLaterToday = (HOURS[new Date().getDay()] || []).some(([s]) => {
+      const [sh, sm] = s.split(":").map(Number); return sh * 60 + sm > nowMin;
+    });
+    const context = !open ? "day" : hasLaterToday ? "break" : "end";
+    const DAY_NAMES = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
+    const todayN = new Date().getDay();
+    const nextOpenOffset = [1,2,3,4,5,6,7].find(i => HOURS[(todayN + i) % 7]);
+    const nextOpenName = DAY_NAMES[(todayN + nextOpenOffset) % 7];
+    const tomorrowOpen = !!HOURS[(todayN + 1) % 7];
+    const dayClosingMsg = tomorrowOpen ? "morn wieder! 👋" : `am ${nextOpenName} wieder! 👋`;
+    const dynamicDayMsgs = [...CLOSED_MSGS_DAY, dayClosingMsg];
+    const msgs = context === "day" ? dynamicDayMsgs : context === "break" ? CLOSED_MSGS_BREAK : CLOSED_MSGS_END;
+    const msg = nextClosedMsg(context, msgs);
     setBtnLabelOpacity(0);
     setTimeout(() => {
       setBtnLabel(msg);
