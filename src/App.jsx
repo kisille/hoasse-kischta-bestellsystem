@@ -504,6 +504,18 @@ export default function App() {
                         setSubmitting(true);
                         setSubmitError("");
                         const today = new Date().toISOString().slice(0, 10);
+                        const { data: fresh } = await supabase.from("orders").select("pickup_time").eq("pickup_date", today).eq("pickup_time", time).neq("status", "cancelled");
+                        const currentCount = (fresh || []).length;
+                        const cap = staffed ? 5 : slotCapacity;
+                        if (currentCount >= cap) {
+                          setSubmitting(false);
+                          setSubmitError("Diese Zeit ist leider schon voll – bitte wähle eine andere Zeit.");
+                          const counts = {};
+                          (fresh || []).forEach(({ pickup_time: t }) => { counts[t] = (counts[t] || 0) + 1; });
+                          setSlotCounts(prev => ({ ...prev, [time]: currentCount }));
+                          setTime("");
+                          return;
+                        }
                         const { error } = await supabase.from("orders").insert({
                           pickup_date: today,
                           pickup_time: time,
