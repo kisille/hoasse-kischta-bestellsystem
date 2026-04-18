@@ -77,11 +77,11 @@ export default function Admin() {
     setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
   };
 
-  const setSetting = async (key, value) => {
-    await supabase.from("settings").upsert({ key, value: String(value) });
+  const setSetting = (key, value) => {
     if (key === "paused") setPaused(value);
     if (key === "staffed") setStaffed(value);
     if (key === "extra_minutes") setExtraMinutes(value);
+    supabase.from("settings").upsert({ key, value: String(value) });
   };
 
   if (!pinOk) {
