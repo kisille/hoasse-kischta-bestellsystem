@@ -222,9 +222,21 @@ export default function Admin() {
                 {o.notes && <div style={{ marginTop: 6, fontSize: 12, color: CRD, fontStyle: "italic" }}>📝 {o.notes}</div>}
               </div>
               {o.status === "pending" && (
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => updateStatus(o.id, "done")} style={{ flex: 1, padding: "9px", borderRadius: 8, background: S, border: "none", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Fertig ✓</button>
-                  <button onClick={() => updateStatus(o.id, "cancelled")} style={{ flex: 1, padding: "9px", borderRadius: 8, background: "rgba(224,82,82,0.15)", border: "1px solid rgba(224,82,82,0.3)", color: "#e05252", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Storniert</button>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => updateStatus(o.id, "done")} style={{ flex: 1, padding: "9px", borderRadius: 8, background: S, border: "none", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Fertig ✓</button>
+                    <button onClick={() => updateStatus(o.id, "cancelled")} style={{ flex: 1, padding: "9px", borderRadius: 8, background: "rgba(224,82,82,0.15)", border: "1px solid rgba(224,82,82,0.3)", color: "#e05252", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Storniert</button>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const phone = o.phone.replace(/[\s\-\(\)]/g, "").replace(/^\+/, "");
+                      const msg = encodeURIComponent(`Hoi ${o.name}! Dini Bstellung dauert leider no a bissle länger als geplant. Bitte komm in ca. 10-15 Minuten. Danke für dein Verständnis! 🙏 – Manu's Hoasse Kischta`);
+                      window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
+                    }}
+                    style={{ width: "100%", padding: "9px", borderRadius: 8, background: "rgba(37,211,102,0.12)", border: "1px solid rgba(37,211,102,0.3)", color: "#25d366", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+                  >
+                    ⏱️ Länger dauert's – WhatsApp schicka
+                  </button>
                 </div>
               )}
             </div>
