@@ -472,7 +472,7 @@ export default function App() {
               </div>
             ) : (
               <>
-                <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 12 }}>
+                <form autoComplete="on" onSubmit={e => e.preventDefault()} style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 12 }}>
                   <div>
                     <label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Name *</label>
                     <input value={name} onChange={e => setName(e.target.value)} placeholder="Din Name" style={{ ...iS, borderColor: nameTouched && !name ? "rgba(224,82,82,0.6)" : "rgba(240,235,224,0.12)" }} />
@@ -480,7 +480,7 @@ export default function App() {
                   </div>
                   <div>
                     <label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Telefonnummer *</label>
-                    <input type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={e => setPhone(e.target.value)} onBlur={() => setPhoneTouched(true)} placeholder="+43..." style={{ ...iS, borderColor: phoneTouched && !phoneOk(phone) ? "rgba(224,82,82,0.6)" : "rgba(240,235,224,0.12)" }} />
+                    <input type="tel" inputMode="tel" autoComplete="tel" name="tel" id="tel" value={phone} onChange={e => setPhone(e.target.value)} onBlur={() => setPhoneTouched(true)} placeholder="+43..." style={{ ...iS, borderColor: phoneTouched && !phoneOk(phone) ? "rgba(224,82,82,0.6)" : "rgba(240,235,224,0.12)" }} />
                     {phoneTouched && !phoneOk(phone) && <div style={{ color: "#e05252", fontSize: 12, marginTop: 5, fontWeight: 500 }}>Bitte a gültige Telefonnummer igea</div>}
                   </div>
                   <div>
@@ -495,7 +495,7 @@ export default function App() {
                     {timeTouched && !time && availableSlots.length > 0 && <div style={{ color: "#e05252", fontSize: 12, marginTop: 5, fontWeight: 500 }}>Bitte a Abholziit wähla</div>}
                   </div>
                   <div><label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Anmerkunga (optional)</label><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="z.B. ohni Zwiebla, extra Sauce..." rows={3} style={{ ...iS, resize: "vertical" }} /></div>
-                </div>
+                </form>
                 <style>{`@keyframes formShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}`}</style>
                 <div style={{ animation: shaking ? "formShake 0.4s ease" : "none" }}>
                   <button
