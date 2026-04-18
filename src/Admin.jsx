@@ -229,7 +229,9 @@ export default function Admin() {
                   </div>
                   <button
                     onClick={() => {
-                      const phone = o.phone.replace(/[\s\-\(\)]/g, "").replace(/^\+/, "");
+                      let phone = o.phone.replace(/\D/g, "");
+                      if (phone.startsWith("00")) phone = phone.slice(2);
+                      else if (phone.startsWith("0")) phone = "43" + phone.slice(1);
                       const msg = encodeURIComponent(`Hallo ${o.name}! Deine Bestellung dauert leider etwas länger als geplant. Bitte komm in ca. 10-15 Minuten. Danke für dein Verständnis! 🙏 – Manu's Hoasse Kischta`);
                       window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
                     }}
