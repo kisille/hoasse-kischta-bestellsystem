@@ -480,7 +480,7 @@ export default function App() {
                   </div>
                   <div>
                     <label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Telefonnummer *</label>
-                    <input type="tel" inputMode="tel" autoComplete="tel" name="tel" id="tel" value={phone} onChange={e => setPhone(e.target.value)} onBlur={() => setPhoneTouched(true)} placeholder="+43..." style={{ ...iS, borderColor: phoneTouched && !phoneOk(phone) ? "rgba(224,82,82,0.6)" : "rgba(240,235,224,0.12)" }} />
+                    <input type="text" inputMode="tel" autoComplete="tel" name="tel" id="tel" value={phone} onChange={e => setPhone(e.target.value)} onBlur={() => setPhoneTouched(true)} placeholder="+43..." style={{ ...iS, borderColor: phoneTouched && !phoneOk(phone) ? "rgba(224,82,82,0.6)" : "rgba(240,235,224,0.12)" }} />
                     {phoneTouched && !phoneOk(phone) && <div style={{ color: "#e05252", fontSize: 12, marginTop: 5, fontWeight: 500 }}>Bitte a gültige Telefonnummer igea</div>}
                   </div>
                   <div>
