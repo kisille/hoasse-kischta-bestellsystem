@@ -35,6 +35,7 @@ export default function Admin() {
   const [newIds, setNewIds] = useState(new Set());
   const [loading, setLoading] = useState(false);
   const [paused, setPaused] = useState(false);
+  const [staffed, setStaffed] = useState(false);
   const [extraMinutes, setExtraMinutes] = useState(0);
   const [filter, setFilter] = useState("pending");
 
@@ -47,6 +48,7 @@ export default function Admin() {
     setOrders(ord || []);
     (set || []).forEach(({ key, value }) => {
       if (key === "paused") setPaused(value === "true");
+      if (key === "staffed") setStaffed(value === "true");
       if (key === "extra_minutes") setExtraMinutes(Number(value));
     });
     setLoading(false);
@@ -76,8 +78,9 @@ export default function Admin() {
   };
 
   const setSetting = async (key, value) => {
-    await supabase.from("settings").update({ value: String(value) }).eq("key", key);
+    await supabase.from("settings").upsert({ key, value: String(value) });
     if (key === "paused") setPaused(value);
+    if (key === "staffed") setStaffed(value);
     if (key === "extra_minutes") setExtraMinutes(value);
   };
 
@@ -152,6 +155,20 @@ export default function Admin() {
               style={{ width: 52, height: 28, borderRadius: 14, background: paused ? "#e05252" : "rgba(240,235,224,0.1)", border: "none", cursor: "pointer", position: "relative", transition: "background 0.2s" }}
             >
               <span style={{ position: "absolute", top: 3, left: paused ? 26 : 3, width: 22, height: 22, borderRadius: "50%", background: "#fff", transition: "left 0.2s", display: "block" }} />
+            </button>
+          </div>
+
+          {/* Verstärkung */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>Verstärkung da 💪</div>
+              <div style={{ fontSize: 12, color: CRD }}>Mehr Slots, kürzerer Puffer (20 Min)</div>
+            </div>
+            <button
+              onClick={() => setSetting("staffed", !staffed)}
+              style={{ width: 52, height: 28, borderRadius: 14, background: staffed ? S : "rgba(240,235,224,0.1)", border: "none", cursor: "pointer", position: "relative", transition: "background 0.2s" }}
+            >
+              <span style={{ position: "absolute", top: 3, left: staffed ? 26 : 3, width: 22, height: 22, borderRadius: "50%", background: "#fff", transition: "left 0.2s", display: "block" }} />
             </button>
           </div>
 
