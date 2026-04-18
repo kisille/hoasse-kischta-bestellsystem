@@ -230,7 +230,7 @@ export default function Admin() {
                   <button
                     onClick={() => {
                       const phone = o.phone.replace(/[\s\-\(\)]/g, "").replace(/^\+/, "");
-                      const msg = encodeURIComponent(`Hoi ${o.name}! Dini Bstellung dauert leider no a bissle länger als geplant. Bitte komm in ca. 10-15 Minuten. Danke für dein Verständnis! 🙏 – Manu's Hoasse Kischta`);
+                      const msg = encodeURIComponent(`Hallo ${o.name}! Deine Bestellung dauert leider etwas länger als geplant. Bitte komm in ca. 10-15 Minuten. Danke für dein Verständnis! 🙏 – Manu's Hoasse Kischta`);
                       window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
                     }}
                     style={{ width: "100%", padding: "9px", borderRadius: 8, background: "rgba(37,211,102,0.12)", border: "1px solid rgba(37,211,102,0.3)", color: "#25d366", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
