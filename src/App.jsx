@@ -475,7 +475,7 @@ export default function App() {
                 <form autoComplete="on" onSubmit={e => e.preventDefault()} style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 12 }}>
                   <div>
                     <label style={{ fontSize: 12, fontWeight: 600, color: CRD, display: "block", marginBottom: 5 }}>Name *</label>
-                    <input value={name} onChange={e => setName(e.target.value)} placeholder="Din Name" style={{ ...iS, borderColor: nameTouched && !name ? "rgba(224,82,82,0.6)" : "rgba(240,235,224,0.12)" }} />
+                    <input autoComplete="name" name="name" id="name" value={name} onChange={e => setName(e.target.value)} placeholder="Din Name" style={{ ...iS, borderColor: nameTouched && !name ? "rgba(224,82,82,0.6)" : "rgba(240,235,224,0.12)" }} />
                     {nameTouched && !name && <div style={{ color: "#e05252", fontSize: 12, marginTop: 5, fontWeight: 500 }}>Bitte din Namen igea</div>}
                   </div>
                   <div>
